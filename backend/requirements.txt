@@ -1,0 +1,9 @@
+Django
+djangorestframework
+django-cors-headers
+numpy
+pandas
+opencv-python
+pillow
+openpyxl
+matplotlib
