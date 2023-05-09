@@ -1,0 +1,6 @@
+[submodule "submodules/openpose"]
+	path = submodules/openpose
+	url = https://github.com/CMU-Perceptual-Computing-Lab/openpose
+[submodule "submodules/yolov4-deepsort"]
+	path = submodules/yolov4-deepsort
+	url = https://github.com/theAIGuysCode/yolov4-deepsort
