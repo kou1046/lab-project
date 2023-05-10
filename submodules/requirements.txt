@@ -6,3 +6,4 @@ matplotlib
 easydict
 pillow
 scipy
+pandas

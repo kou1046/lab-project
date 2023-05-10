@@ -10,7 +10,7 @@ RUN apt update && apt install -y libsm6 libxrender1 libxext6
 RUN pip install -r requirements.txt
 COPY openpose/ ./openpose
 COPY yolov4-deepsort/ ./yolov4-deepsort
+COPY object_tracker.py ./yolov4-deepsort
 
 WORKDIR /app/yolov4-deepsort
 RUN python save_model.py --model yolov4
-CMD ["python", "object_tracker.py", "--video", "outputs/demo.avi", "--dont_show", "--info"]
