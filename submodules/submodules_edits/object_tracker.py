@@ -313,8 +313,6 @@ def main(_argv):
             num = frame_num - 1
             cv2.imwrite(f"{id_dir}/frame_{str(num).zfill(10)}.jpg", result)
             df.to_csv(f"{id_dir}/frame_{str(num).zfill(10)}.csv", index=False, mode="a")
-            if num > 1:
-                print(df)
             df = pd.DataFrame()
 
         if not FLAGS.dont_show:
