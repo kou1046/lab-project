@@ -2,7 +2,7 @@ version: '3'
 
 services:
   submodules: 
-    build: ./
+    build: ./deepsort/
     container_name: lab-submodules
     deploy:
       resources:
