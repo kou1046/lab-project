@@ -1,7 +1,7 @@
-version: '3'
+version: "3"
 
 services:
-  submodules: 
+  submodules:
     build: ./deepsort/
     container_name: lab-submodules
     deploy:
@@ -13,6 +13,14 @@ services:
               capabilities: [gpu]
     volumes:
       - ./outputs:/app/outputs
-    entrypoint: ["python", "object_tracker.py", "--info", "--dont_show", "--count", "--video"]
-    command: ["outputs/demo.avi"]
-    tty: true 
+    tty: true
+    # entrypoint:
+    #   [
+    #     "python",
+    #     "object_tracker.py",
+    #     "--info",
+    #     "--dont_show",
+    #     "--count",
+    #     "--video",
+    #   ]d
+    # command: ["outputs/demo.avi"]
