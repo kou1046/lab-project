@@ -1,1 +1,3 @@
-outputs/
+submodules/outputs/
+/submodules/inputs/*
+!.gitkeep
