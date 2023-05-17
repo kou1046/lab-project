@@ -1,9 +1,9 @@
-version: '3'
+version: "3"
 
 services:
-  submodules: 
+  deepsort:
     build: ./deepsort/
-    container_name: lab-submodules
+    container_name: deepsort
     deploy:
       resources:
         reservations:
@@ -13,6 +13,19 @@ services:
               capabilities: [gpu]
     volumes:
       - ./outputs:/app/outputs
-    entrypoint: ["python", "object_tracker.py", "--info", "--dont_show", "--count", "--video"]
-    command: ["outputs/demo.avi"]
-    tty: true 
+      - ./inputs:/app/inputs
+    tty: true
+  openpose:
+    build: ./openpose/
+    container_name: openpose
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./outputs:/app/outputs
+      - ./inputs:/app/inputs
+    tty: true
