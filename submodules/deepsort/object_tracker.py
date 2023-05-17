@@ -48,16 +48,13 @@ flags.DEFINE_string(
 flags.DEFINE_float("iou", 0.45, "iou threshold")
 flags.DEFINE_float("score", 0.50, "score threshold")
 flags.DEFINE_boolean("dont_show", False, "dont show video output")
-flags.DEFINE_boolean("info", False, "show detailed info of tracked objects")
+flags.DEFINE_string("info", "", "show detailed info of tracked objects")
 flags.DEFINE_boolean("count", False, "count objects being tracked on screen")
 
 
 def main(_argv):
-    output_dir = os.path.join("..", "outputs")
-    os.makedirs(output_dir, exist_ok=True)
     if FLAGS.info:
-        id_dir = os.path.join(output_dir, "ID")   
-        os.makedirs(id_dir, exist_ok=True)
+        id_dir = os.path.join(FLAGS.info)
     df = pd.DataFrame()
     # Definition of the parameters
     max_cosine_distance = 0.4
@@ -312,7 +309,7 @@ def main(_argv):
         if FLAGS.info:
             num = frame_num - 1
             cv2.imwrite(f"{id_dir}/frame_{str(num).zfill(10)}.jpg", result)
-            df.to_csv(f"{id_dir}/frame_{str(num).zfill(10)}.csv", index=False, mode="a")
+            df.to_csv(f"{id_dir}/frame_{str(num).zfill(10)}.csv", index=False, mode="w")
             df = pd.DataFrame()
 
         if not FLAGS.dont_show:
