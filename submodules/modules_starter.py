@@ -3,10 +3,17 @@ import glob
 
 OPENPOSE_OUTPUT_DIR_NAME = "keypoints"
 DEEPSORT_OUTPUT_DIR_NAME = "ID"
+VIDEO_TYPES = ["mp4", "avi", "MTS", "mov", "webm", "flv"]
 
-os.chdir(os.path.join(__file__, ".."))
+def find_video_paths_in_directory(dir_path: str) -> list[str]:
+    video_paths: list[str] = []
+    for VIDEO_TYPE in VIDEO_TYPES:
+        video_paths.extend(glob.glob(os.path.join(dir_path, f"*{VIDEO_TYPE}")))
+    return video_paths
 
-input_paths = glob.glob(os.path.join(__file__, "..", "inputs", "*.mp4"))
+os.chdir(os.path.dirname(__file__))
+input_paths = find_video_paths_in_directory(os.path.join(os.path.dirname(__file__), "inputs"))
+
 if not input_paths:
     raise (FileNotFoundError("動画が見つかりません. inputsフォルダに動画を配置してください. "))
 
@@ -20,7 +27,7 @@ for container_input_path in container_input_paths:
 
     # OPENPOSE
     os.makedirs(
-        os.path.join(__file__, "..", "outputs", video_name, OPENPOSE_OUTPUT_DIR_NAME),
+        os.path.join(os.path.dirname(__file__), "outputs", video_name, OPENPOSE_OUTPUT_DIR_NAME),
         exist_ok=True,
     )
     os.system(
@@ -29,7 +36,7 @@ for container_input_path in container_input_paths:
 
     # DEEPSORT
     os.makedirs(
-        os.path.join(__file__, "..", "outputs", video_name, DEEPSORT_OUTPUT_DIR_NAME),
+        os.path.join(os.path.dirname(__file__), "outputs", video_name, DEEPSORT_OUTPUT_DIR_NAME),
         exist_ok=True,
     )
     os.system(
