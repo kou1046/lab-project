@@ -1,9 +1,17 @@
 Django
 djangorestframework
 django-cors-headers
+drf-nested-routers
 numpy
 pandas
 opencv-python
 pillow
 openpyxl
 matplotlib
+dacite 
+pillow
+tqdm
+scipy
+scikit-learn
+black
+isort
