@@ -19,7 +19,8 @@ input_paths = find_video_paths_in_directory(
 )
 
 if not input_paths:
-    raise (FileNotFoundError("動画が見つかりません. inputsフォルダに動画を配置してください. "))
+    input("動画が見つかりません. inputsフォルダに動画を配置してください. \nキーを入力すると終了します．")
+    exit()
 
 container_input_paths = [
     f"/app/inputs/{os.path.basename(path)}" for path in input_paths

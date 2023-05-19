@@ -1,3 +1,4 @@
 submodules/outputs/
 /submodules/inputs/*
+__pycache__
 !.gitkeep
