@@ -6,6 +6,7 @@ services:
     container_name: lab-backend
     volumes:
       - ./backend:/app
+      - ./submodules/outputs:/outputs
     ports:
       - 8000:8000
     command: python manage.py runserver 0.0.0.0:8000
