@@ -1,4 +1,5 @@
+db.sqlite3
 submodules/outputs/
 /submodules/inputs/*
-__pycache__
+__pycache__/
 !.gitkeep
