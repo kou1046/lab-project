@@ -1,10 +1,13 @@
 import os
-import sys
+
+""" 
+django の DB, ORM のみを使いたい場合, このファイルをインポートする．
+"""
 
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join("api", "db.sqlite3"),
+        "NAME": "db.sqlite3",
     }
 }
 

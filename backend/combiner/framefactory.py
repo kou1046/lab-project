@@ -5,7 +5,7 @@ from functools import reduce
 
 import numpy as np
 import pandas as pd
-from datatypes import *
+from .intermediate_model import *
 from pandas.errors import EmptyDataError
 
 
@@ -43,7 +43,7 @@ class OpenPoseJsonData(LoadedDataFromPath):
         keypoints: list[KeyPoint] = []
         for row in value:
             points = [ProbabilisticPoint(cell[0], cell[1], cell[2]) for cell in row]
-            keypoints.append(KeyPoint(points))
+            keypoints.append(KeyPoint(*points))
         return keypoints
 
 
@@ -74,7 +74,7 @@ class DeepSortCsvData(LoadedDataFromPath):
 
 
 class CombinedFrameFactory:
-    def __init__(self, base_point: str = "midhip"):
+    def __init__(self, group_name: str, base_point: str = "midhip", group_cls=Group):
         """_summary_
           中間処理が必要になった場合, このクラスを継承又は包含し, サブクラスでpreprcessメソッドをオーバーライドする
         Args:
@@ -83,6 +83,7 @@ class CombinedFrameFactory:
         """
         self.frame_number: int = 0
         self.base_point: str = base_point
+        self.group = group_cls(group_name)
 
     def _preprocess_keypoints(self, keypoints: list[KeyPoint]):
         return [keypoint for keypoint in keypoints if getattr(keypoint, self.base_point).p != 0]
@@ -98,7 +99,7 @@ class CombinedFrameFactory:
     ) -> CombinedFrame:
         self.frame_number += 1
         if ds_csv_data.is_empty():
-            return CombinedFrame([], ds_jpg_data.path, self.frame_number)
+            return CombinedFrame(self.group, [], ds_jpg_data.path, self.frame_number)
         keypoints = sorted(
             op_data.generate_keypoints(),
             key=lambda arg: getattr(arg, self.base_point).x,
@@ -145,7 +146,7 @@ class CombinedFrameFactory:
                 )
 
         subject_people = [Person(keypoint, box) for box, keypoint in chosen_items.items()]
-        return CombinedFrame(subject_people, ds_jpg_data.path, self.frame_number)
+        return CombinedFrame(self.group, subject_people, ds_jpg_data.path, self.frame_number)
 
 
 class ComplementCombinedFrameFactory(CombinedFrameFactory):

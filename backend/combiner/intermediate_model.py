@@ -145,7 +145,7 @@ class KeyPoint:
 
 @dataclass(frozen=True)
 class Person:
-    keypoints: KeyPoint
+    keypoint: KeyPoint
     box: BoundingBox
 
     @property
@@ -154,7 +154,13 @@ class Person:
 
 
 @dataclass(frozen=True)
+class Group:
+    name: str
+
+
+@dataclass(frozen=True)
 class CombinedFrame:
+    group: Group
     people: list[Person]
     img_path: str
     number: int
