@@ -5,4 +5,5 @@ ENV PYTHONPATH /app
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-RUN apt update && apt install -y tk libglib2.0-0 libsm6 libxrender1 libxext6
+RUN apt update && \ 
+    apt install -y tk libglib2.0-0 libsm6 libxrender1 libxext6 fonts-noto-cjk

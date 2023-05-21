@@ -1,7 +1,5 @@
 from __future__ import annotations
-import sys
 
-sys.path.append(".")
 from typing import Sequence
 from dataclasses import asdict
 from api import serializers

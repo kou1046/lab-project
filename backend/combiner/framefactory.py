@@ -32,7 +32,12 @@ class OpenPoseJsonData(LoadedDataFromPath):
     def _read_json(self, path: str):
         with open(path, "r") as f:
             item = json.load(f)
-        return np.array([np.array(person["pose_keypoints_2d"]).reshape(-1, 3) for person in item["people"]])
+        return np.array(
+            [
+                np.array(person["pose_keypoints_2d"]).reshape(-1, 3)
+                for person in item["people"]
+            ]
+        )
 
     def is_empty(self):
         return not self.value.any()
@@ -70,7 +75,10 @@ class DeepSortCsvData(LoadedDataFromPath):
 
     def generate_boxes(self) -> list[BoundingBox]:
         assert self.is_empty() is not None, "人が見つかりません"
-        return [BoundingBox(row[0], Point(row[1], row[2]), Point(row[3], row[4])) for row in self.value.tolist()]
+        return [
+            BoundingBox(row[0], Point(row[1], row[2]), Point(row[3], row[4]))
+            for row in self.value.tolist()
+        ]
 
 
 class CombinedFrameFactory:
@@ -86,7 +94,11 @@ class CombinedFrameFactory:
         self.group = group_cls(group_name)
 
     def _preprocess_keypoints(self, keypoints: list[KeyPoint]):
-        return [keypoint for keypoint in keypoints if getattr(keypoint, self.base_point).p != 0]
+        return [
+            keypoint
+            for keypoint in keypoints
+            if getattr(keypoint, self.base_point).p != 0
+        ]
 
     def _preprocess_boxes(self, boxes: list[BoundingBox]):
         return boxes
@@ -117,12 +129,19 @@ class CombinedFrameFactory:
             if isin_count == 0:
                 continue
             elif isin_count == 1:
-                chosen_box = [box for box, isinbox in zip(preprocessed_boxes, isin_boxes) if isinbox][0]
+                chosen_box = [
+                    box
+                    for box, isinbox in zip(preprocessed_boxes, isin_boxes)
+                    if isinbox
+                ][0]
             else:  # 2つ以上のBoxに関節点が入っている場合，Boxの中心と関節点の距離が小さいBoxを採用する
-                in_boxes = [preprocessed_boxes[i] for i, isin in enumerate(isin_boxes) if isin]
+                in_boxes = [
+                    preprocessed_boxes[i] for i, isin in enumerate(isin_boxes) if isin
+                ]
                 chosen_box = reduce(
                     lambda box1, box2: box1
-                    if base_point.distance_to(box1.center()) < base_point.distance_to(box2.center())
+                    if base_point.distance_to(box1.center())
+                    < base_point.distance_to(box2.center())
                     else box2,
                     in_boxes,
                 )
@@ -137,7 +156,9 @@ class CombinedFrameFactory:
                 """
 
                 processed_keypoint = chosen_items[chosen_box]
-                processed_base_point: Point = getattr(processed_keypoint, self.base_point)
+                processed_base_point: Point = getattr(
+                    processed_keypoint, self.base_point
+                )
                 chosen_items[chosen_box] = (
                     keypoint
                     if base_point.distance_to(chosen_box.center())
@@ -145,8 +166,12 @@ class CombinedFrameFactory:
                     else processed_keypoint
                 )
 
-        subject_people = [Person(keypoint, box) for box, keypoint in chosen_items.items()]
-        return CombinedFrame(self.group, subject_people, ds_jpg_data.path, self.frame_number)
+        subject_people = [
+            Person(keypoint, box) for box, keypoint in chosen_items.items()
+        ]
+        return CombinedFrame(
+            self.group, subject_people, ds_jpg_data.path, self.frame_number
+        )
 
 
 class ComplementCombinedFrameFactory(CombinedFrameFactory):
