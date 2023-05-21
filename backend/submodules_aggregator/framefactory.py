@@ -112,7 +112,7 @@ class CombinedFrameFactory:
             )
 
         sorted_keypoints = sorted(
-            keypoint,
+            keypoints,
             key=lambda arg: getattr(arg, self.base_point).x,
         )
         sorted_boxes = sorted(boxes, key=lambda arg: arg.center().x)
