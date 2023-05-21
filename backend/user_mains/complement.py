@@ -1,6 +1,6 @@
 from tkinter.filedialog import askdirectory
 import glob
-from combiner import complementidcreator
+from submodules_aggregator import complementidcreator
 
 base_dir = askdirectory(initialdir="/outputs")
 ids = glob.glob(f"{base_dir}/ID/*.csv")

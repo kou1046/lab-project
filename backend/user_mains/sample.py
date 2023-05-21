@@ -1,6 +1,6 @@
 from tkinter.filedialog import askdirectory
 import glob
-from combiner import complementidcreator, preprocessor, framefactory
+from submodules_aggregator import complementidcreator, preprocessor, framefactory
 import cv2
 
 base_dir = askdirectory(initialdir="/outputs")

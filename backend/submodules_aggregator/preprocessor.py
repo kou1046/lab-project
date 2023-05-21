@@ -5,7 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
-from combiner.intermediate_model import CombinedFrame, KeyPoint
+from submodules_aggregator.intermediate_model import CombinedFrame, KeyPoint
 
 from .intermediate_model import BoundingBox, CombinedFrame, KeyPoint, KeyPointAttr
 

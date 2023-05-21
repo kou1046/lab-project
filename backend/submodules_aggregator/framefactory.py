@@ -98,11 +98,8 @@ class CombinedFrameFactory:
         if ds_csv_data.is_empty():
             return CombinedFrame(self.group, [], ds_jpg_data.path, self.frame_number)
 
-        keypoints = sorted(
-            op_data.generate_keypoints(),
-            key=lambda arg: getattr(arg, self.base_point).x,
-        )
-        boxes = sorted(ds_csv_data.generate_boxes(), key=lambda arg: arg.center().x)
+        keypoints = op_data.generate_keypoints()
+        boxes = ds_csv_data.generate_boxes()
 
         if self.preprocessor is not None:
             keypoints, boxes = self.preprocessor.preprocess(
@@ -114,17 +111,23 @@ class CombinedFrameFactory:
                 self.prev_frame,
             )
 
+        sorted_keypoints = sorted(
+            keypoint,
+            key=lambda arg: getattr(arg, self.base_point).x,
+        )
+        sorted_boxes = sorted(boxes, key=lambda arg: arg.center().x)
+
         chosen_items: dict[BoundingBox, KeyPoint] = {}
-        for keypoint in keypoints:
+        for keypoint in sorted_keypoints:
             base_point: Point = getattr(keypoint, self.base_point)
-            isin_boxes = [box.contains(base_point) for box in boxes]
+            isin_boxes = [box.contains(base_point) for box in sorted_boxes]
             isin_count = isin_boxes.count(True)
             if isin_count == 0:
                 continue
             elif isin_count == 1:
-                chosen_box = [box for box, isinbox in zip(boxes, isin_boxes) if isinbox][0]
+                chosen_box = [box for box, isinbox in zip(sorted_boxes, isin_boxes) if isinbox][0]
             else:  # 2つ以上のBoxに関節点が入っている場合，Boxの中心と関節点の距離が小さいBoxを採用する
-                in_boxes = [boxes[i] for i, isin in enumerate(isin_boxes) if isin]
+                in_boxes = [sorted_boxes[i] for i, isin in enumerate(isin_boxes) if isin]
                 chosen_box = reduce(
                     lambda box1, box2: box1
                     if base_point.distance_to(box1.center()) < base_point.distance_to(box2.center())
