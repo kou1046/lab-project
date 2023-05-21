@@ -14,7 +14,7 @@ from pandas.errors import EmptyDataError
 from tqdm import tqdm
 
 from .intermediate_model import BoundingBox, Point
-from mylab_py_utils.mywidget import ScrollFrame, ImageCanvas, ContainerManager
+from mypkg.mylab_py_utils.mywidget import ScrollFrame, ImageCanvas, ContainerManager
 
 """
 補完idのファイル(stop_ids, replace_ids, monitor_ids, create_ids計4つ)をComplementIdCreatorクラスによって作成するスクリプト.
@@ -42,7 +42,9 @@ class FrameWithImgBoxes:
         isin_boxes = [box.contains(Point(*point)) for box in target_boxes]
         return (np.array(target_boxes)[isin_boxes]).tolist()
 
-    def find_box_byid(self, id: int, add_boxes: None | list[BoundingBox] = None) -> BoundingBox:
+    def find_box_byid(
+        self, id: int, add_boxes: None | list[BoundingBox] = None
+    ) -> BoundingBox:
         target_boxes = self.boxes if add_boxes is None else (self.boxes + add_boxes)
         return [box for box in target_boxes if box.id == id][0]
 
@@ -51,7 +53,9 @@ class FrameWithImgBoxes:
 class StopResume:  # 停止フレームと再開フレームが複数ある可能性があるため．stop_idだけ少し複雑.
     id: int
     stop_frames: list[int]
-    resume_frames: list[float | int]  # float('inf')の可能性があるので型はfloat|int. float('inf')のときは再開フレームが存在せず，ずっと停止したままのidを指す
+    resume_frames: list[
+        float | int
+    ]  # float('inf')の可能性があるので型はfloat|int. float('inf')のときは再開フレームが存在せず，ずっと停止したままのidを指す
     index: int = 0
     status: Literal["resuming", "stopping"] = "resuming"
 
@@ -71,18 +75,24 @@ class StopResume:  # 停止フレームと再開フレームが複数ある可�
 
 
 @dataclass(frozen=True)
-class TrackingBoundingBox(BoundingBox):  # createidsの記録に使う，開始するフレーム情報と，動的に動いた軌跡を格納するtrackingプロパティを追加している．
+class TrackingBoundingBox(
+    BoundingBox
+):  # createidsの記録に使う，開始するフレーム情報と，動的に動いた軌跡を格納するtrackingプロパティを追加している．
     start_frame: int
     istracking: bool = False
 
     def __post_init__(self):
-        self._replace_range(Point(self.min.x, self.min.y), Point(self.max.x, self.max.y))
+        self._replace_range(
+            Point(self.min.x, self.min.y), Point(self.max.x, self.max.y)
+        )
 
     def _replace_range(self, min: Point, max: Point) -> None:  # lazy
         object.__setattr__(self, "tracking_min", min)
         object.__setattr__(self, "tracking_max", max)
 
-    def update_tracking_range_from_img(self, prev_img: np.ndarray, new_img: np.ndarray) -> None:
+    def update_tracking_range_from_img(
+        self, prev_img: np.ndarray, new_img: np.ndarray
+    ) -> None:
         """
         prev_img内ボックス画像の'一部'を抜き取り, new_imgのボックス内画像と相互相関によるテンプレートマッチングを行い, 類似度を計算する.
         類似度が一番高かったテンプレートの座標を取得し, 計算前と計算後の座標移動変化をtrackingプロパティに反映する.
@@ -98,13 +108,17 @@ class TrackingBoundingBox(BoundingBox):  # createidsの記録に使う，開始�
         )  # prev_self_imgにおける，ボックス真ん中から1/2の距離をトリミングした座標
         prev_left_x, prev_top_y = pt1
         prev_right_x, prev_btm_y = pt2
-        prev_template_img = prev_self_img[prev_top_y:prev_btm_y, prev_left_x:prev_right_x]  # テンプレート
+        prev_template_img = prev_self_img[
+            prev_top_y:prev_btm_y, prev_left_x:prev_right_x
+        ]  # テンプレート
 
         new_self_img = new_img[
             self.tracking_min.y : self.tracking_max.y,
             self.tracking_min.x : self.tracking_max.x,
         ]  # new_imgのボックス内画像
-        cc_matrix = cv2.matchTemplate(new_self_img, prev_template_img, cv2.TM_CCOEFF_NORMED)
+        cc_matrix = cv2.matchTemplate(
+            new_self_img, prev_template_img, cv2.TM_CCOEFF_NORMED
+        )
 
         min_v, max_v, min_idx, max_idx = cv2.minMaxLoc(cc_matrix)
         new_left_x, new_top_y = max_idx
@@ -113,13 +127,19 @@ class TrackingBoundingBox(BoundingBox):  # createidsの記録に使う，開始�
 
         height, width, _ = prev_img.shape
 
-        new_min = Point((self.tracking_min.x + delta_x), (self.tracking_min.y + delta_y))
-        new_max = Point((self.tracking_max.x + delta_x), (self.tracking_max.y + delta_y))
+        new_min = Point(
+            (self.tracking_min.x + delta_x), (self.tracking_min.y + delta_y)
+        )
+        new_max = Point(
+            (self.tracking_max.x + delta_x), (self.tracking_max.y + delta_y)
+        )
         self._replace_range(new_min, new_max)
 
 
 class MonitorIdsManager(ContainerManager):
-    def __init__(self, master, contents: set[int], receive_func: Callable[[int], None], **kw):
+    def __init__(
+        self, master, contents: set[int], receive_func: Callable[[int], None], **kw
+    ):
         self.grand: ComplementIdCreator = master.nametowidget(".")
         self.contents: set[int]
         self.canvases: list[ImageCanvas] = []
@@ -135,14 +155,18 @@ class MonitorIdsManager(ContainerManager):
                 box = self.grand._completed_find_box_byid(replaced_id)
             else:
                 box = self.grand._completed_find_box_byid(id_)
-            person_img = self.grand.viewed_frame.img[box.min.y : box.max.y, box.min.x : box.max.x]
+            person_img = self.grand.viewed_frame.img[
+                box.min.y : box.max.y, box.min.x : box.max.x
+            ]
         else:
             person_img = np.zeros((100, 100, 3), dtype=np.uint8)
         canvas.update_img(cv2.resize(person_img, dsize=(100, 100)))
         canvas.person_id = id_  # この追加プロパティはクリックしたときにidを送信するときにも利用 → _send_clicked_id
         canvas.pack()
         del_btn = tk.Button(f, text="-")
-        del_btn.bind("<1>", lambda e: [self.receive_content_func(e, id_), self.update()])
+        del_btn.bind(
+            "<1>", lambda e: [self.receive_content_func(e, id_), self.update()]
+        )
         del_btn.pack()
         f.pack(side=tk.LEFT)
         self.canvases.append(canvas)
@@ -153,7 +177,9 @@ class MonitorIdsManager(ContainerManager):
 
     def photo_update(
         self,
-    ) -> set[int]:  # 毎回すべて生成しなおすのは重いので 画像のみ更新したいときはこのメソッド(マウススクロール時に用いる) 返り値があり，更新されたIDを返す
+    ) -> set[
+        int
+    ]:  # 毎回すべて生成しなおすのは重いので 画像のみ更新したいときはこのメソッド(マウススクロール時に用いる) 返り値があり，更新されたIDを返す
         return_values: set[int] = set()
         for canvas in self.canvases:
             isreplacing, replaced_id = self.grand._isreplacing(
@@ -184,12 +210,16 @@ class MonitorIdsManager(ContainerManager):
 
     def _canvas_update(self, canvas: ImageCanvas, id_: int) -> None:
         box = self.grand._completed_find_box_byid(id_)
-        person_img = self.grand.viewed_frame.img[box.min.y : box.max.y, box.min.x : box.max.x]
+        person_img = self.grand.viewed_frame.img[
+            box.min.y : box.max.y, box.min.x : box.max.x
+        ]
         canvas.update_img(cv2.resize(person_img, dsize=(100, 100)))
 
 
 class StopIdsManager(ContainerManager):
-    def __init__(self, master, contents: StopIds, receive_func: Callable[[int], None], **kw):
+    def __init__(
+        self, master, contents: StopIds, receive_func: Callable[[int], None], **kw
+    ):
         self.grand: ComplementIdCreator = master.nametowidget(".")
         super().__init__(master, contents, receive_func, **kw)
 
@@ -202,7 +232,9 @@ class StopIdsManager(ContainerManager):
                 del self.contents[id_]
 
         def resume():  # 停止から再開
-            if value.stop_frames[-1] >= self.grand.frame_num:  # 直前の停止フレームより今見ているフレームのほうが小さいとき
+            if (
+                value.stop_frames[-1] >= self.grand.frame_num
+            ):  # 直前の停止フレームより今見ているフレームのほうが小さいとき
                 return
             value.status = "resuming"
             value.resume_frames[-1] = self.grand.frame_num  # infから現在のフレームに
@@ -212,13 +244,17 @@ class StopIdsManager(ContainerManager):
         value: StopResume = self.contents[id_]
         id_frame = tk.LabelFrame(frame, text=f"ID:{id_}")
         del_btn = tk.Button(id_frame, text="-")
-        del_btn.bind("<1>", lambda e: [self.receive_content_func(e, id_), self.update()])
+        del_btn.bind(
+            "<1>", lambda e: [self.receive_content_func(e, id_), self.update()]
+        )
         del_btn.pack(side=tk.LEFT)
         for stop_frame, resume_frame in zip(value.stop_frames, value.resume_frames):
             tk.Label(id_frame, text=f"{stop_frame}以降停止 → {resume_frame}以降再開").pack()
         if value.status == "stopping":  # もし停止中なら"再開"ボタンと直前の停止をキャンセルするボタンを追加する
             f = tk.Frame(id_frame)
-            tk.Button(f, text="キャンセル", command=lambda: [cancel(), self.update(), print(value)]).pack(side=tk.LEFT)
+            tk.Button(
+                f, text="キャンセル", command=lambda: [cancel(), self.update(), print(value)]
+            ).pack(side=tk.LEFT)
             resume_btn = tk.Button(
                 f,
                 text="再開",
@@ -233,7 +269,9 @@ class StopIdsManager(ContainerManager):
 
 
 class ReplaceIdsManager(ContainerManager):
-    def __init__(self, master, contents: ReplaceIds, receive_func: Callable[[int], None], **kw):
+    def __init__(
+        self, master, contents: ReplaceIds, receive_func: Callable[[int], None], **kw
+    ):
         self.grand: ComplementIdCreator = master.nametowidget(".")
         super().__init__(master, contents, receive_func, **kw)
 
@@ -241,9 +279,13 @@ class ReplaceIdsManager(ContainerManager):
         frame_num = content
         value: dict[int, int] = self.contents[frame_num]
         for done_id, do_id in value.items():
-            tk.Label(frame, text=f"フレーム{frame_num}以降{done_id} → {do_id}").pack(side=tk.LEFT)
+            tk.Label(frame, text=f"フレーム{frame_num}以降{done_id} → {do_id}").pack(
+                side=tk.LEFT
+            )
         del_btn = tk.Button(frame, text="-")
-        del_btn.bind("<1>", lambda e: [self.receive_content_func(e, frame_num), self.update()])
+        del_btn.bind(
+            "<1>", lambda e: [self.receive_content_func(e, frame_num), self.update()]
+        )
         del_btn.pack()
 
 
@@ -258,7 +300,9 @@ class CreateIdsManager(ContainerManager):
         self.grand: ComplementIdCreator = master.nametowidget(".")
         super().__init__(master, contents, receive_func, **kw)
 
-    def _create_content_widget(self, frame: tk.Frame, content: TrackingBoundingBox) -> None:
+    def _create_content_widget(
+        self, frame: tk.Frame, content: TrackingBoundingBox
+    ) -> None:
         istracking_str = "有効" if content.istracking else "無効"
         tk.Label(
             frame,
@@ -303,7 +347,10 @@ class OptionSelector(tk.LabelFrame):
             self.grand.option_selector.skip = 1
             while True:
                 self.grand._viewer_update(fake_scroll)
-                if completed_monitor_ids != self.grand.completed_ids or self.grand.frame_num == len(self.grand.frames):
+                if (
+                    completed_monitor_ids != self.grand.completed_ids
+                    or self.grand.frame_num == len(self.grand.frames)
+                ):
                     break
                 completed_monitor_ids = self.grand.completed_ids
 
@@ -365,7 +412,9 @@ CreateIds = list[TrackingBoundingBox]
 class ComplementIdCreator(tk.Tk):
     total_frame = 1
 
-    def __init__(self, id_csv_paths: Sequence[str], img_paths: Sequence[str], out_dir: str):
+    def __init__(
+        self, id_csv_paths: Sequence[str], img_paths: Sequence[str], out_dir: str
+    ):
         super().__init__()
         if os.path.exists(os.path.join(out_dir, monitor_filename)):
             (
@@ -393,7 +442,9 @@ class ComplementIdCreator(tk.Tk):
         self.frames: list[FrameWithImgBoxes] = []
         self.out_dir: str = out_dir
         height, width, _ = cv2.imread(img_paths[0]).shape
-        for csv_path, img_path in tqdm(zip(id_csv_paths, img_paths), total=len(id_csv_paths)):
+        for csv_path, img_path in tqdm(
+            zip(id_csv_paths, img_paths), total=len(id_csv_paths)
+        ):
             self.frames.append(
                 FrameWithImgBoxes(
                     img_path,
@@ -411,9 +462,13 @@ class ComplementIdCreator(tk.Tk):
                 )
             )
         scroll_frame = ScrollFrame(self, custom_height=1600, custom_width=1600)
-        self.main_f = tk.LabelFrame(scroll_frame.f, text=ComplementIdCreator.total_frame)
+        self.main_f = tk.LabelFrame(
+            scroll_frame.f, text=ComplementIdCreator.total_frame
+        )
         replace_stop_area = tk.Frame(self.main_f)
-        self.option_selector: OptionSelector = OptionSelector(self.main_f, text="Option")
+        self.option_selector: OptionSelector = OptionSelector(
+            self.main_f, text="Option"
+        )
         init_img = self.frames[0].img
         height, width, _ = init_img.shape
         self.viewer: ImageCanvas = ImageCanvas(self.main_f, width=width, height=height)
@@ -482,7 +537,9 @@ class ComplementIdCreator(tk.Tk):
                     *[
                         widget.bind(
                             "<1>",
-                            lambda e: self._send_two_clicked_ids(e, self._add_replace_id),
+                            lambda e: self._send_two_clicked_ids(
+                                e, self._add_replace_id
+                            ),
                         )
                         for widget in self.monitor_list.canvases
                     ],
@@ -490,25 +547,37 @@ class ComplementIdCreator(tk.Tk):
             if pressed_name == "stop":
                 explanation.set("監視を一時停止するIDを選択してください．")
                 click_binds = [
-                    self.viewer.bind("<1>", lambda e: self._send_clicked_id(e, self._add_stop_id)),
+                    self.viewer.bind(
+                        "<1>", lambda e: self._send_clicked_id(e, self._add_stop_id)
+                    ),
                     *[
-                        widget.bind("<1>", lambda e: self._send_clicked_id(e, self._add_stop_id))
+                        widget.bind(
+                            "<1>", lambda e: self._send_clicked_id(e, self._add_stop_id)
+                        )
                         for widget in self.monitor_list.canvases
                     ],
                 ]
             if pressed_name == "monitor":
                 explanation.set("監視対象に加えるIDを選択してください．")
-                click_binds = [self.viewer.bind("<1>", lambda e: self._send_clicked_id(e, self._add_monitor_id))]
+                click_binds = [
+                    self.viewer.bind(
+                        "<1>", lambda e: self._send_clicked_id(e, self._add_monitor_id)
+                    )
+                ]
 
             if pressed_name == "create":
                 explanation.set("2点をクリックしてボックスを作成してください．")
                 istracking_var = tk.BooleanVar(btn_f)
-                tk.Checkbutton(btn_f, variable=istracking_var, text="Enable tracking").pack()
+                tk.Checkbutton(
+                    btn_f, variable=istracking_var, text="Enable tracking"
+                ).pack()
                 istracking_var.set(True)
                 click_binds = [
                     self.viewer.bind(
                         "<1>",
-                        lambda e: self._send_two_clicked_cor(e, self._add_create_id, istracking=istracking_var.get()),
+                        lambda e: self._send_two_clicked_cor(
+                            e, self._add_create_id, istracking=istracking_var.get()
+                        ),
                     )
                 ]
 
@@ -546,7 +615,9 @@ class ComplementIdCreator(tk.Tk):
             )
         btn_f.pack(after=self.viewer)
 
-    def _viewer_update(self, e: tk.Event | None):  # マウススクロール時や監視id追加時などの画像の更新, Noneはスクロール時以外で更新したいときに渡す
+    def _viewer_update(
+        self, e: tk.Event | None
+    ):  # マウススクロール時や監視id追加時などの画像の更新, Noneはスクロール時以外で更新したいときに渡す
         prev_viewer_img = self.viewer.img
 
         if isinstance(e, tk.Event):
@@ -563,11 +634,15 @@ class ComplementIdCreator(tk.Tk):
                     else 0
                 )
 
-        updated_ids = self.monitor_list.photo_update()  # モニターidリストの画像更新と，画像更新に利用されたidの取得
+        updated_ids = (
+            self.monitor_list.photo_update()
+        )  # モニターidリストの画像更新と，画像更新に利用されたidの取得
         new_viewer_img = self.viewed_frame.img
 
         for stamped_box in self.added_box:
-            if (stamped_box.id not in self.scoped_replace_dict) and (stamped_box.start_frame != self.frame_num):
+            if (stamped_box.id not in self.scoped_replace_dict) and (
+                stamped_box.start_frame != self.frame_num
+            ):
                 continue
 
             if stamped_box.istracking:  # createしたボックスが，トラッキング有効だったとき
@@ -592,7 +667,9 @@ class ComplementIdCreator(tk.Tk):
 
         if self.option_selector.isvisible:
             boxes = [
-                self._completed_find_box_byid(id_) for id_ in updated_ids if self._isreplacing(id_)[1] > 0
+                self._completed_find_box_byid(id_)
+                for id_ in updated_ids
+                if self._isreplacing(id_)[1] > 0
             ]  # 後半のifはcreateしたボックスを省いている(描画が重なってしまうため).
             for box in boxes:
                 cv2.rectangle(
@@ -634,7 +711,9 @@ class ComplementIdCreator(tk.Tk):
             id_ = scoped_replace_dict[id_]
 
         if id_ not in self.stop_ids:  # 初めて停止させるなら
-            self.stop_ids[id_] = StopResume(id_, [self.frame_num], [float("inf")], status="stopping")
+            self.stop_ids[id_] = StopResume(
+                id_, [self.frame_num], [float("inf")], status="stopping"
+            )
         else:  # 2回目以降の停止させるなら
             if self.stop_ids[id_].status == "stopping":  # 既に停止中なら
                 return
@@ -652,7 +731,9 @@ class ComplementIdCreator(tk.Tk):
         print(f"add replace id. frame:{frame}, done:{done_id}, do:{do_id}")
         scoped_replace_dict = self.scoped_replace_dict
         while True:
-            if do_id in scoped_replace_dict:  # do_idがさらに置き換え対象である場合は，monitor_idのどれかにたどるまでreplaceを繰り返す
+            if (
+                do_id in scoped_replace_dict
+            ):  # do_idがさらに置き換え対象である場合は，monitor_idのどれかにたどるまでreplaceを繰り返す
                 do_id = scoped_replace_dict[do_id]
             else:
                 break
@@ -664,7 +745,9 @@ class ComplementIdCreator(tk.Tk):
         self.replace_list.update()
         self._viewer_update(None)
 
-    def _add_create_id(self, cor_1: tuple[int, int], cor_2: tuple[int, int], istracking: bool = False):
+    def _add_create_id(
+        self, cor_1: tuple[int, int], cor_2: tuple[int, int], istracking: bool = False
+    ):
         xmin, ymin = cor_1
         xmax, ymax = cor_2
         if xmin > xmax:
@@ -674,7 +757,11 @@ class ComplementIdCreator(tk.Tk):
         added_img = self.viewer.img
         self.viewer.update_img(added_img)
         added_box = TrackingBoundingBox(
-            self.create_num, Point(xmin, ymin), Point(xmax, ymax), self.frame_num, istracking
+            self.create_num,
+            Point(xmin, ymin),
+            Point(xmax, ymax),
+            self.frame_num,
+            istracking,
         )
         self.create_ids.append(added_box)
         self.create_list.update()
@@ -696,7 +783,9 @@ class ComplementIdCreator(tk.Tk):
                 sub_win.title = "複数のIDが見つかりました．"
                 var = tk.IntVar(sub_win)
                 for box in clicked_boxes:
-                    tk.Radiobutton(sub_win, text=f"ID:{box.id}", value=box.id, variable=var).pack()
+                    tk.Radiobutton(
+                        sub_win, text=f"ID:{box.id}", value=box.id, variable=var
+                    ).pack()
                 var.set(box.id)
                 tk.Button(sub_win, text="完了", command=sub_win.destroy).pack()
                 sub_win.grab_set()
@@ -711,7 +800,9 @@ class ComplementIdCreator(tk.Tk):
     def _send_two_clicked_ids(
         self,
         e: tk.Event | None,
-        send_id_func: Callable[[int, int, int], Any],  # send_id_funcに渡される引数は[最初のクリック時のフレーム，最初のクリックされたid, 2回目のクリックされたid]
+        send_id_func: Callable[
+            [int, int, int], Any
+        ],  # send_id_funcに渡される引数は[最初のクリック時のフレーム，最初のクリックされたid, 2回目のクリックされたid]
         *,
         __first_clicked_id: list[int | None] = [None],
         __first_clicked_frame_num: list[int | None] = [None],
@@ -729,7 +820,9 @@ class ComplementIdCreator(tk.Tk):
 
                 min_point = clicked_box.min
                 max_point = clicked_box.max
-                clicked_person_img = self.viewed_frame.img[min_point.y : max_point.y, min_point.x : max_point.x]
+                clicked_person_img = self.viewed_frame.img[
+                    min_point.y : max_point.y, min_point.x : max_point.x
+                ]
                 self.clicked_person_viewer.create_image(clicked_person_img)
 
             else:  # 二回目クリック時の処理
@@ -767,17 +860,23 @@ class ComplementIdCreator(tk.Tk):
             send_cor_func(__first_clicked_cor[0], second_clicked_cor, **arg)
             __first_clicked_cor[0] = None
 
-    def _needsstop(self, id_: int) -> bool:  # 現在見ているフレームにおいて，渡されたidが停止期間中ならTrue, そうでないならFalse
+    def _needsstop(
+        self, id_: int
+    ) -> bool:  # 現在見ているフレームにおいて，渡されたidが停止期間中ならTrue, そうでないならFalse
         if id_ in self.stop_ids:
             stopresume = self.stop_ids[id_]
-            for stop_frame, resume_frame in zip(stopresume.stop_frames, stopresume.resume_frames):
+            for stop_frame, resume_frame in zip(
+                stopresume.stop_frames, stopresume.resume_frames
+            ):
                 if self.frame_num >= stop_frame and self.frame_num < resume_frame:
                     return True
         return False
 
     def _isreplacing(
         self, id_: int
-    ) -> tuple[bool, int]:  # 現在見ているフレームにおいて，渡されたidが置き換える対象であれば，Trueと置き換えられるid, そうでなければFalseと引数のidをそのまま返す.
+    ) -> tuple[
+        bool, int
+    ]:  # 現在見ているフレームにおいて，渡されたidが置き換える対象であれば，Trueと置き換えられるid, そうでなければFalseと引数のidをそのまま返す.
         scoped_replace_dict = self.scoped_replace_dict
         invert_replace_dict = {do: done for done, do in scoped_replace_dict.items()}
         if id_ in invert_replace_dict:
@@ -814,13 +913,19 @@ class ComplementIdCreator(tk.Tk):
     @property
     def scoped_replace_dict(
         self,
-    ) -> dict[int, int]:  # 現在見ているフレーム以前の，replaceしたidを取得する (現在見ているフレームで置き換えてもよいid情報を取得する)
-        frames = np.array(list(self.replace_ids))  # replaceを適用した時の全フレームのコンテナ np.array([int(フレーム数)])
+    ) -> dict[
+        int, int
+    ]:  # 現在見ているフレーム以前の，replaceしたidを取得する (現在見ているフレームで置き換えてもよいid情報を取得する)
+        frames = np.array(
+            list(self.replace_ids)
+        )  # replaceを適用した時の全フレームのコンテナ np.array([int(フレーム数)])
         isscoped: Sequence[bool] = frames <= self.frame_num
         scoped_frames = np.sort(frames[isscoped])  # frames配列において，現在見ているフレーム以前のものに絞り込む
         scoped_replace_dict: dict[int, int] = {}  # {done:do}
         for scoped_frame in scoped_frames:
-            invert_replace_dict = {do: done for done, do in self.replace_ids[scoped_frame].items()}
+            invert_replace_dict = {
+                do: done for done, do in self.replace_ids[scoped_frame].items()
+            }
             scoped_replace_dict = {
                 **scoped_replace_dict,
                 **invert_replace_dict,
@@ -837,15 +942,20 @@ class ComplementIdCreator(tk.Tk):
 
         scoped_replace_dict = self.scoped_replace_dict
         viewed_replaced_ids = {
-            scoped_replace_dict[id] if id in scoped_replace_dict else id for id in viewed_ids
+            scoped_replace_dict[id] if id in scoped_replace_dict else id
+            for id in viewed_ids
         }  # 見ているフレームのidが置き換え対象ならmonitor_idのどれかに置き換える
 
         viewed_stopped_ids = viewed_replaced_ids & set(self.stop_ids)
         for stopped_id in viewed_stopped_ids.copy():
             if not self._needsstop(stopped_id):
-                viewed_stopped_ids.remove(stopped_id)  # 今のフレームが停止期間内ではなかったらstopped_idsから省く
+                viewed_stopped_ids.remove(
+                    stopped_id
+                )  # 今のフレームが停止期間内ではなかったらstopped_idsから省く
 
-        viewed_replaced_ids_without_stopped = viewed_replaced_ids - viewed_stopped_ids  # replaceした後に停止中のidsを省く必要がある
+        viewed_replaced_ids_without_stopped = (
+            viewed_replaced_ids - viewed_stopped_ids
+        )  # replaceした後に停止中のidsを省く必要がある
 
         return viewed_replaced_ids_without_stopped & self.monitor_ids
 
@@ -878,7 +988,9 @@ def read_id_csv(csv_path: str) -> tuple[int, int, int, int, int]:
 
 def deserialize_complement_ids(
     monitor_json: str, replace_json: str, stop_json: str, create_json: str
-) -> tuple[MonitorIds, ReplaceIds, StopIds, CreateIds]:  # jsonはキーに数字が使えないので変換するための処理が必要で少し冗長
+) -> tuple[
+    MonitorIds, ReplaceIds, StopIds, CreateIds
+]:  # jsonはキーに数字が使えないので変換するための処理が必要で少し冗長
     with open(monitor_json, "r") as f:
         monitor_ids: MonitorIds = set(json.load(f))
     with open(replace_json, "r") as f:
@@ -916,9 +1028,11 @@ def get_scaled_rectangle(
     origin_pt: tuple[int, int] = (0, 0),
 ) -> tuple[tuple[int, int], tuple[int, int]]:
     scaled_xmin, scaled_ymin = tuple(
-        int(level * (cor - origin_cor) + origin_cor) for cor, origin_cor in zip(pt1, origin_pt)
+        int(level * (cor - origin_cor) + origin_cor)
+        for cor, origin_cor in zip(pt1, origin_pt)
     )
     scaled_xmax, scaled_ymax = tuple(
-        int(level * (cor - origin_cor) + origin_cor) for cor, origin_cor in zip(pt2, origin_pt)
+        int(level * (cor - origin_cor) + origin_cor)
+        for cor, origin_cor in zip(pt2, origin_pt)
     )
     return ((scaled_xmin, scaled_ymin), (scaled_xmax, scaled_ymax))
