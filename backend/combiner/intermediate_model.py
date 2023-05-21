@@ -11,7 +11,7 @@ class Point:
     x: float | int
     y: float | int
 
-    def __post__init__(self):
+    def __post_init__(self):
         if self.x < 0:
             object.__setattr__(self, "x", 0)
         if self.y < 0:

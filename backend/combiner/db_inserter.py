@@ -1,7 +1,9 @@
 from __future__ import annotations
+import sys
+
+sys.path.append(".")
 from typing import Sequence
 from dataclasses import asdict
-import db_setup
 from api import serializers
 from . import intermediate_model
 

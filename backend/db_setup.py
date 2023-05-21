@@ -15,7 +15,7 @@ INSTALLED_APPS = ("api",)
 
 SECRET_KEY = "REPLACE_ME"
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "orm_setup")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "db_setup")
 from django.core.wsgi import get_wsgi_application
 
 app = get_wsgi_application()
