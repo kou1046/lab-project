@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Literal
 from dataclasses import dataclass
 
 import cv2
@@ -47,6 +48,34 @@ class BoundingBox:
 
 
 POINT_NAMES = [
+    "nose",
+    "neck",
+    "r_shoulder",
+    "r_elbow",
+    "r_wrist",
+    "l_shoulder",
+    "l_elbow",
+    "l_wrist",
+    "midhip",
+    "r_hip",
+    "r_knee",
+    "r_ankle",
+    "l_hip",
+    "l_knee",
+    "l_ankle",
+    "r_eye",
+    "l_eye",
+    "r_ear",
+    "l_ear",
+    "l_bigtoe",
+    "l_smalltoe",
+    "l_heel",
+    "r_bigtoe",
+    "r_smalltoe",
+    "r_hell",
+]
+
+KeyPointAttr = Literal[
     "nose",
     "neck",
     "r_shoulder",
@@ -182,7 +211,7 @@ class CombinedFrame:
         point_radius: int = 5,
         thickness: int = 3,
     ) -> np.ndarray:
-        img = self.img().copy()
+        img = self.img.copy()
         for person in self.people:
             cv2.putText(
                 img,
