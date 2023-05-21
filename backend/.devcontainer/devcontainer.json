@@ -7,23 +7,22 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-python.vscode-pylance",
-        "donjayamanne.python-extension-pack",
-        "ms-python.python",
-        "ms-python.black-formatter",
-        "ms-python.isort"
-      ],
+		"ms-python.vscode-pylance",
+		"donjayamanne.python-extension-pack",
+		"ms-python.python",
+		"ms-python.black-formatter",
+		"ms-python.isort",
+		"alexcvzz.vscode-sqlite"
+	],
       "settings": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.codeActionsOnSave": {
           "source.fixAll": true,
           "source.organizeImports": true
-        },    
-        "black-formatter.args":["--line-length=120"],
-        "isort.args": [
-          "--proflie", "black"
-        ],
+        },
+        "black-formatter.args": ["--line-length=120"],
+        "isort.args": ["--proflie", "black"],
         "diffEditor.ignoreTrimWhitespace": true
       }
     }

@@ -24,9 +24,9 @@ class NonNegativeFloatField(models.FloatField):
         return value
 
 
-class Point(UUIDModel):
+class AbstractPoint(UUIDModel):
     class Meta:
-        db_table = "point"
+        abstract = True
 
     x = NonNegativeFloatField()
     y = NonNegativeFloatField()
@@ -40,7 +40,12 @@ class Point(UUIDModel):
         return np.arccos((np.dot(vec_1, vec_2)) / (np.linalg.norm(vec_1) * np.linalg.norm(vec_2))) * 180 / np.pi
 
 
-class ProbabilisticPoint(Point):
+class Point(AbstractPoint):
+    class Meta:
+        db_table = "point"
+
+
+class ProbabilisticPoint(AbstractPoint):
     class Meta:
         db_table = "probabilistic_point"
 
@@ -193,7 +198,7 @@ class CombinedFrame(UUIDModel):
 
     def get_visualized_image(
         self,
-        draw_keypoints: bool = False,
+        draw_keypoint: bool = False,
         color: tuple[int, int, int] = (0, 0, 0),
         point_radius: int = 5,
         thickness: int = 3,
@@ -216,7 +221,7 @@ class CombinedFrame(UUIDModel):
                 color,
                 thickness,
             )
-            if draw_keypoints:
+            if draw_keypoint:
                 for point in person.keypoint.get_all_points():
                     cv2.circle(
                         img,
