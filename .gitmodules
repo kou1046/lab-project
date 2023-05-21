@@ -1,0 +1,3 @@
+[submodule "backend/mylab_py_utils"]
+	path = backend/mylab_py_utils
+	url = https://github.com/kou1046/mylab_py_utils
