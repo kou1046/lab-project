@@ -310,8 +310,8 @@ class Person(UUIDModel):
         frame_img = self.frame.img
         screen_height, screen_width, _ = frame_img.shape
         img = frame_img[
-            self.box.min.x : (self.box.max.y if self.box.max.y <= screen_height else screen_height),
-            self.box.min.x : (self.box.max.x if self.box.max.x <= screen_width else screen_width),
+            int(self.box.min.y) : (int(self.box.max.y) if self.box.max.y <= screen_height else screen_height),
+            int(self.box.min.x) : (int(self.box.max.x) if self.box.max.x <= screen_width else screen_width),
         ]
         return img
 
@@ -361,7 +361,7 @@ class Person(UUIDModel):
         for point in self.keypoint.get_all_points():
             cv2.circle(
                 img_copy,
-                (int(point.x) - self.box.min.x, int(point.y) - self.box.min.y),
+                (int(point.x) - int(self.box.min.x), int(point.y) - int(self.box.min.y)),
                 point_radius,
                 color,
                 thickness,
