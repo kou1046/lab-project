@@ -230,7 +230,7 @@ class CombinedFrame:
                 thickness,
             )
             if draw_keypoints:
-                for point in person.keypoints.get_all_points():
+                for point in person.keypoint.get_all_points():
                     cv2.circle(
                         img,
                         (int(point.x), int(point.y)),
