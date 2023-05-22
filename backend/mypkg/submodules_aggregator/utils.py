@@ -16,7 +16,12 @@ from .complementidcreator import (
 )
 from . import intermediate_model
 from .complementidcreator import ComplementIdCreator
-from .framefactory import OpenPoseJsonData, DeepSortCsvData, DeepSortJpgData, CombinedFrameFactory
+from .framefactory import (
+    OpenPoseJsonData,
+    DeepSortCsvData,
+    DeepSortJpgData,
+    CombinedFrameFactory,
+)
 from .preprocessor import Complementer
 
 
@@ -101,7 +106,7 @@ def save_group_to_db(frames: list[intermediate_model.CombinedFrame]):
     """
     _summary_
         前述の関数のcreate_group_dataにて結合したデータをDBに登録する関数. 登録したデータは django のORM からアクセスできる.
-        DBに登録するとリレーションが使えるので後々のデータ抽出が楽になる.
+        DBに登録すると ORMを通じてリレーションが使えるので後々のデータ抽出が楽になる.
 
     Args:
         frames (list[intermediate_model.CombinedFrame]): create_group_dataの返り値.

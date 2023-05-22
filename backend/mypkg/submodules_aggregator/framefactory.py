@@ -105,7 +105,6 @@ class CombinedFrameFactory:
             keypoints, boxes = self.preprocessor.preprocess(
                 keypoints,
                 boxes,
-                self.base_point,
                 cv2.imread(ds_jpg_data.path),
                 self.frame_number,
                 self.prev_frame,

@@ -97,7 +97,6 @@ class Complementer(Preprocessor):
         self,
         keypoints: list[KeyPoint],
         boxes: list[BoundingBox],
-        base_point: KeyPointAttr,
         img: np.ndarray,
         frame_num: int,
         prev_frame: CombinedFrame | None,
