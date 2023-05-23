@@ -102,12 +102,12 @@ class FrameListSerializer(serializers.ListSerializer):
             new_frames.append(new_frame)
             for person in people:
                 for name, probabilistic_point in person["keypoint"].items():
-                    new_probilistic_point = ProbabilisticPoint(**probabilistic_point)
+                    new_probilistic_point = ProbabilisticPoint(**probabilistic_point, group=new_group)
                     person["keypoint"][name] = new_probilistic_point
                     new_probilistic_points.append(new_probilistic_point)
                 for range_name in ("min", "max"):
                     point = person["box"][range_name]
-                    new_point = Point(**point)
+                    new_point = Point(**point, group=new_group)
                     person["box"][range_name] = new_point
                     new_points.append(new_point)
                 new_box = BoundingBox(**person["box"])

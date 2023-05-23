@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import db_setup
 from api import serializers
+from api import models
 
 from .complementidcreator import (
     replace_filename,
@@ -69,11 +70,15 @@ def create_group_data(
     """
 
     base_dir = askdirectory(initialdir="/outputs")
+    if not base_dir:
+        exit()
     keypoint_jsons = glob.glob(os.path.join(base_dir, "keypoints", "*.json"))
     id_csvs = glob.glob(os.path.join(base_dir, "ID", "*.csv"))
     id_jpgs = glob.glob(os.path.join(base_dir, "ID", "*.jpg"))
 
-    assert len(keypoint_jsons) == len(id_csvs) == len(id_jpgs), "json, csv, jpgの数が一致しません"
+    assert (
+        len(keypoint_jsons) == len(id_csvs) == len(id_jpgs)
+    ), "json, csv, jpgの数が一致しません"
 
     # complementsフォルダがある場合，補完を適用する
     if os.path.exists(os.path.join(base_dir, "complements")):
@@ -90,14 +95,20 @@ def create_group_data(
     else:
         preprocessor = None
 
-    framefactory = CombinedFrameFactory(group_name, base_point, preprocessor=preprocessor)
+    framefactory = CombinedFrameFactory(
+        group_name, base_point, preprocessor=preprocessor
+    )
 
     frames: list[intermediate_model.CombinedFrame] = []
-    for json, csv, jpg in tqdm(zip(keypoint_jsons, id_csvs, id_jpgs), total=len(keypoint_jsons)):
+    for json, csv, jpg in tqdm(
+        zip(keypoint_jsons, id_csvs, id_jpgs), total=len(keypoint_jsons)
+    ):
         openpose_json_data = OpenPoseJsonData(json)
         deepsort_csv_data = DeepSortCsvData(csv)
         deep_jpg_data = DeepSortJpgData(jpg)
-        frame = framefactory.create(openpose_json_data, deepsort_csv_data, deep_jpg_data)
+        frame = framefactory.create(
+            openpose_json_data, deepsort_csv_data, deep_jpg_data
+        )
         frames.append(frame)
     return frames
 

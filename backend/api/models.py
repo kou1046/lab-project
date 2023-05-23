@@ -7,6 +7,8 @@ import uuid
 import cv2
 import numpy as np
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 
 class UUIDModel(models.Model):
@@ -24,12 +26,20 @@ class NonNegativeFloatField(models.FloatField):
         return value
 
 
+class Group(models.Model):
+    class Meta:
+        db_table = "group"
+
+    name = models.CharField(primary_key=True, max_length=50)
+
+
 class AbstractPoint(UUIDModel):
     class Meta:
         abstract = True
 
     x = NonNegativeFloatField()
     y = NonNegativeFloatField()
+    group = models.ForeignKey(Group, models.CASCADE, related_name="+")  # Groupを消去したときに全て関連するデータを消去したいので必要
 
     def distance_to(self, other: Point):
         return np.linalg.norm(np.array([self.x - other.x, self.y - other.y]))
@@ -170,13 +180,6 @@ class KeyPoint(UUIDModel):
         return self.r_elbow.distance_to(self.l_elbow)
 
 
-class Group(models.Model):
-    class Meta:
-        db_table = "group"
-
-    name = models.CharField(primary_key=True, max_length=50)
-
-
 class CombinedFrame(UUIDModel):
     class Meta:
         db_table = "frame"
@@ -301,8 +304,8 @@ class Person(UUIDModel):
     class Meta:
         db_table = "person"
 
-    keypoint = models.OneToOneField(KeyPoint, models.CASCADE, related_name="+")
-    box = models.OneToOneField(BoundingBox, models.CASCADE, related_name="+")
+    keypoint = models.OneToOneField(KeyPoint, models.CASCADE, related_name="person")
+    box = models.OneToOneField(BoundingBox, models.CASCADE, related_name="person")
     frame = models.ForeignKey(CombinedFrame, models.CASCADE, related_name="people")
 
     @property
