@@ -9,7 +9,8 @@ from torch import nn, optim
 from torch.utils import data
 from torchvision import transforms
 
-import utils as myutils
+
+from user_mains.learnkit import utils
 from api import models
 
 
@@ -110,7 +111,7 @@ def get_extracted_range(person: models.Person) -> tuple[models.Point, models.Poi
     return models.Point(xmin, ymin), models.Point(xmax, ymax)
 
 
-def train_transform(person: models.Person) -> tuple[torch.Tensor, torch.Tensor]:
+def train_transform(person: models.Person) -> tuple[torch.Tensor]:
     min_point, max_point = get_extracted_range(person)
     if min_point is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
         return torch.zeros((1, 160, 160))
@@ -137,7 +138,7 @@ def train_transform(person: models.Person) -> tuple[torch.Tensor, torch.Tensor]:
     return transformer(person_target_img)
 
 
-def val_transform(person: models.Person) -> tuple[torch.Tensor, torch.Tensor]:
+def val_transform(person: models.Person) -> tuple[torch.Tensor]:
     min_point, max_point = get_extracted_range(person)
     if min_point is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
         return torch.zeros((1, 160, 160))
@@ -161,7 +162,7 @@ def val_transform(person: models.Person) -> tuple[torch.Tensor, torch.Tensor]:
     return transformer(person_target_img)
 
 
-def collate_fn(batch: list[tuple]) -> tuple[torch.Tensor, torch.Tensor]:
+def collate_fn(batch: list[tuple[torch.Tensor, int]]) -> tuple[torch.Tensor, torch.Tensor]:
     imgs = []
     labels = []
     for sample, t in batch:
@@ -179,8 +180,8 @@ if __name__ == "__main__":
     batch_size = 16
     max_epoch = 500
 
-    train_set = myutils.TeacherDataset(train, train_transform)
-    test_set = myutils.TeacherDataset(test, val_transform)
+    train_set = utils.TeacherDataset(train, train_transform)
+    test_set = utils.TeacherDataset(test, val_transform)
     train_loader = data.DataLoader(train_set, batch_size, collate_fn=collate_fn)
     test_loader = data.DataLoader(test_set, batch_size, collate_fn=collate_fn)
 
@@ -189,7 +190,7 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     checkpoints = [100, 150, 200, 230, 250, 270, 300, 400, 500]
 
-    myutils.model_compile(
+    utils.model_compile(
         model,
         train_loader,
         test_loader,
