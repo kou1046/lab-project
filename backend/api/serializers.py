@@ -46,14 +46,13 @@ class PersonSerializer(serializers.ModelSerializer):
         fields = ["box", "keypoint"]
 
 
-class PersonWithFrameNumberSerializer(serializers.ModelSerializer):
-    box = BoxSerializer()
+class LightPersonSerializer(serializers.ModelSerializer):
     frameNum = serializers.IntegerField(source="frame.number")
     group = serializers.CharField(source="frame.group.name")
 
     class Meta:
         model = Person
-        fields = ["id", "box", "frameNum", "group"]
+        fields = ["id", "frameNum", "group"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -63,23 +62,30 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class FrameSerializer(serializers.ModelSerializer):
-    """
-    書き込み時はimg_path, 読み込み時はimgを返す
-    """
-
     people = PersonSerializer(many=True)
-    img = serializers.SerializerMethodField()
     group = GroupSerializer()
 
     class Meta:
         model = CombinedFrame
-        fields = ["group", "img_path", "people", "number", "img"]
-        extra_kwargs = {"img_path": {"write_only": True}}
+        fields = ["group", "img_path", "people", "number"]
 
-    def get_img(self, instance: CombinedFrame):
-        with open(instance.img_path, "rb") as f:
-            img = base64.b64encode(f.read())
-        return img.decode("utf-8")
+
+class FrameSerializer(serializers.ModelSerializer):
+    people = PersonSerializer(many=True)
+    group = GroupSerializer()
+
+    class Meta:
+        model = CombinedFrame
+        fields = ["group", "img_path", "people", "number"]
+
+
+class LightFrameSerialiser(serializers.ModelSerializer):
+    group = GroupSerializer()
+    people = LightPersonSerializer(many=True)
+
+    class Meta:
+        model = CombinedFrame
+        fields = ["group", "img_path", "people", "number"]
 
 
 class FrameListSerializer(serializers.ListSerializer):
@@ -207,6 +213,6 @@ class TeacherSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = {
             "label": instance.label,
-            "person": PersonWithFrameNumberSerializer(instance.person).data,
+            "person": LightPersonSerializer(instance.person).data,
         }
         return data
