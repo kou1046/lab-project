@@ -8,10 +8,12 @@ opencv-python
 pillow
 openpyxl
 matplotlib
-dacite 
+dacite
 pillow
 tqdm
 scipy
 scikit-learn
 black
 isort
+torch 
+torchvision

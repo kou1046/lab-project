@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import itertools
-from msilib import sequence
 from typing import Any, Literal, Optional, Sequence, Type, TypeVar, Union
 
 import matplotlib.patches as mpatches
@@ -432,7 +431,6 @@ def abbreviated_plot(
 
 
 if __name__ == "__main__":
-
     xs = np.linspace(1, 1000, 1000)
     ys = np.linspace(1, 1000, 1000)
     plot_kw = {"lw": 3, "linestyle": "--"}
