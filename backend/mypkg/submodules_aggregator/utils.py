@@ -1,6 +1,6 @@
 import os
 from tkinter.filedialog import askdirectory
-from tkinter.filedialog import askdirectory
+from typing import Sequence
 import glob
 from dataclasses import asdict
 from tqdm import tqdm
@@ -41,7 +41,8 @@ def complement_tracking():
 
 
 def create_group_data(
-    group_name: str, base_point: intermediate_model.KeyPointAttr = "midhip"
+    group_name: str,
+    base_point: intermediate_model.KeyPointAttr = "midhip",
 ) -> list[intermediate_model.CombinedFrame]:
     """
     __summary__:
@@ -68,7 +69,6 @@ def create_group_data(
             data = create_data("demo_2", "neck")
             save_frames_to_db(data) #DBに登録
     """
-
     base_dir = askdirectory(initialdir="/outputs")
     if not base_dir:
         exit()

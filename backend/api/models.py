@@ -39,7 +39,9 @@ class AbstractPoint(UUIDModel):
 
     x = NonNegativeFloatField()
     y = NonNegativeFloatField()
-    group = models.ForeignKey(Group, models.CASCADE, related_name="+")  # Groupを消去したときに全て関連するデータを消去したいので必要
+    group = models.ForeignKey(
+        Group, models.CASCADE, related_name="+"
+    )  # Groupを消去したときに全て関連するデータを消去したいので必要
 
     def distance_to(self, other: Point):
         return np.linalg.norm(np.array([self.x - other.x, self.y - other.y]))
@@ -47,7 +49,13 @@ class AbstractPoint(UUIDModel):
     def angle(self, a_point: Point, c_point: Point):
         vec_1 = np.array([a_point.x - self.x, c_point.y - c_point.y])
         vec_2 = np.array([c_point.x - self.x, c_point.y - c_point.y])
-        return np.arccos((np.dot(vec_1, vec_2)) / (np.linalg.norm(vec_1) * np.linalg.norm(vec_2))) * 180 / np.pi
+        return (
+            np.arccos(
+                (np.dot(vec_1, vec_2)) / (np.linalg.norm(vec_1) * np.linalg.norm(vec_2))
+            )
+            * 180
+            / np.pi
+        )
 
 
 class Point(AbstractPoint):
@@ -77,7 +85,12 @@ class BoundingBox(models.Model):
         return Point(x=center_x, y=center_y)
 
     def contains(self, point: Point) -> bool:
-        return point.x >= self.min.x and point.x <= self.max.x and point.y >= self.min.y and point.y <= self.max.y
+        return (
+            point.x >= self.min.x
+            and point.x <= self.max.x
+            and point.y >= self.min.y
+            and point.y <= self.max.y
+        )
 
 
 POINT_NAMES = [
@@ -183,7 +196,11 @@ class KeyPoint(UUIDModel):
 class CombinedFrame(UUIDModel):
     class Meta:
         db_table = "frame"
-        constraints = [models.UniqueConstraint(fields=["number", "group"], name="group_frame_num_unique")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["number", "group"], name="group_frame_num_unique"
+            )
+        ]
 
     number = models.IntegerField()
     img_path = models.CharField(max_length=100)
@@ -239,9 +256,15 @@ class CombinedFrame(UUIDModel):
 class MousePos(UUIDModel):
     class Meta:
         db_table = "mouse_position"
-        constraints = [models.UniqueConstraint(fields=["group", "time"], name="unique_mouse_position")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["group", "time"], name="unique_mouse_position"
+            )
+        ]
 
-    group = models.ForeignKey(Group, models.CASCADE, related_query_name="mouse_postions")
+    group = models.ForeignKey(
+        Group, models.CASCADE, related_query_name="mouse_postions"
+    )
     time = models.TimeField()
     x = models.IntegerField()
     y = models.IntegerField()
@@ -290,7 +313,11 @@ class Device(UUIDModel):
     @property
     def drawn_screenshot(self) -> np.ndarray:
         ss = self.screenshot
-        color = (0, 0, 0) if self.mouse_click is None and self.mouse_release is None else (0, 0, 255)
+        color = (
+            (0, 0, 0)
+            if self.mouse_click is None and self.mouse_release is None
+            else (0, 0, 255)
+        )
         cv2.circle(ss, (self.mouse_pos.x, self.mouse_pos.y), 5, color, 10)
         return ss
 
@@ -307,14 +334,21 @@ class Person(UUIDModel):
     keypoint = models.OneToOneField(KeyPoint, models.CASCADE, related_name="person")
     box = models.OneToOneField(BoundingBox, models.CASCADE, related_name="person")
     frame = models.ForeignKey(CombinedFrame, models.CASCADE, related_name="people")
+    group = models.ForeignKey(Group, models.CASCADE, related_name="people")
 
     @property
     def img(self) -> np.ndarray:
         frame_img = self.frame.img
         screen_height, screen_width, _ = frame_img.shape
         img = frame_img[
-            int(self.box.min.y) : (int(self.box.max.y) if self.box.max.y <= screen_height else screen_height),
-            int(self.box.min.x) : (int(self.box.max.x) if self.box.max.x <= screen_width else screen_width),
+            int(self.box.min.y) : (
+                int(self.box.max.y)
+                if self.box.max.y <= screen_height
+                else screen_height
+            ),
+            int(self.box.min.x) : (
+                int(self.box.max.x) if self.box.max.x <= screen_width else screen_width
+            ),
         ]
         return img
 
@@ -364,7 +398,10 @@ class Person(UUIDModel):
         for point in self.keypoint.get_all_points():
             cv2.circle(
                 img_copy,
-                (int(point.x) - int(self.box.min.x), int(point.y) - int(self.box.min.y)),
+                (
+                    int(point.x) - int(self.box.min.x),
+                    int(point.y) - int(self.box.min.y),
+                ),
                 point_radius,
                 color,
                 thickness,
@@ -378,7 +415,11 @@ class Person(UUIDModel):
 class MouseDrag(UUIDModel):
     class Meta:
         db_table = "drag"
-        constraints = [models.UniqueConstraint(fields=["click", "group", "release"], name="unique_drag")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["click", "group", "release"], name="unique_drag"
+            )
+        ]
 
     click = models.OneToOneField(MouseClick, on_delete=models.CASCADE)
     release = models.OneToOneField(MouseRelease, on_delete=models.CASCADE)
@@ -387,12 +428,16 @@ class MouseDrag(UUIDModel):
 
     @property
     def distance(self) -> float:
-        return np.linalg.norm(np.array([self.click.x - self.release.x, self.click.y - self.release.y]))
+        return np.linalg.norm(
+            np.array([self.click.x - self.release.x, self.click.y - self.release.y])
+        )
 
     @property
     def time(self) -> float:
         d = datetime.datetime.now().date()
-        td = datetime.datetime.combine(d, self.release.time) - datetime.datetime.combine(d, self.click.time)
+        td = datetime.datetime.combine(
+            d, self.release.time
+        ) - datetime.datetime.combine(d, self.click.time)
         return td.total_seconds()
 
 
@@ -411,11 +456,15 @@ class InferenceModel(UUIDModel):
 class Teacher(models.Model):
     class Meta:
         db_table = "teacher"
-        constraints = [models.UniqueConstraint(fields=["person", "model"], name="unique_teacher")]
+        constraints = [
+            models.UniqueConstraint(fields=["person", "model"], name="unique_teacher")
+        ]
 
     person = models.ForeignKey(Person, models.CASCADE, related_name="teachers")
     label = models.IntegerField(default=0)
-    model = models.ForeignKey(InferenceModel, on_delete=models.CASCADE, related_name="teachers")
+    model = models.ForeignKey(
+        InferenceModel, on_delete=models.CASCADE, related_name="teachers"
+    )
 
 
 class Action(models.Model):

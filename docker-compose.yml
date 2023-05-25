@@ -9,22 +9,22 @@ services:
       - ./submodules/outputs:/outputs
     ports:
       - 8000:8000
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-    command: python3 manage.py runserver 0.0.0.0:8000
+    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     tty: true
-  frontend:
-    build: ./frontend
-    container_name: lab-frontend
-    volumes:
-      - ./frontend:/app
-      - ./submodules/outputs:/app/public/outputs
-    ports:
-      - 3000:3000
-    tty: true
-    command: npm run dev
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+  # frontend:
+  #   build: ./frontend
+  #   container_name: lab-frontend
+  #   volumes:
+  #     - ./frontend:/app
+  #     - ./submodules/outputs:/app/public/outputs
+  #   ports:
+  #     - 3000:3000
+  #   tty: true
+  #   command: npm run dev

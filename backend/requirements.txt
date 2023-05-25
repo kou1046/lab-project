@@ -15,5 +15,5 @@ scipy
 scikit-learn
 black
 isort
-torch 
-torchvision
+# torch 
+# torchvision
