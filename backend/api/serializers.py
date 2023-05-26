@@ -59,6 +59,7 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ["name"]
+        extra_kwargs = {"name": {"validators": []}}  # 　これがないと既にDBにあるgroupの名前で（別のフレームのデータを）登録しようとしたとき，is_validでひっかかる
 
 
 class FrameSerializer(serializers.ModelSerializer):
@@ -108,9 +109,7 @@ class FrameListSerializer(serializers.ListSerializer):
             new_frames.append(new_frame)
             for person in people:
                 for name, probabilistic_point in person["keypoint"].items():
-                    new_probilistic_point = ProbabilisticPoint(
-                        **probabilistic_point, group=new_group
-                    )
+                    new_probilistic_point = ProbabilisticPoint(**probabilistic_point, group=new_group)
                     person["keypoint"][name] = new_probilistic_point
                     new_probilistic_points.append(new_probilistic_point)
                 for range_name in ("min", "max"):
@@ -121,9 +120,7 @@ class FrameListSerializer(serializers.ListSerializer):
                 new_box = BoundingBox(**person["box"])
                 new_keypoint = KeyPoint(**person["keypoint"])
 
-                new_person = Person(
-                    box=new_box, keypoint=new_keypoint, frame=new_frame, group=new_group
-                )
+                new_person = Person(box=new_box, keypoint=new_keypoint, frame=new_frame, group=new_group)
                 new_boxes.append(new_box)
                 new_keypoints.append(new_keypoint)
                 new_people.append(new_person)
