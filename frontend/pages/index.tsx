@@ -1,26 +1,29 @@
 import { useState } from "react";
 import Image from "next/image";
+import { Group } from "@/lib/types/apiTypes";
+import axios from "axios";
+import { GetStaticProps } from "next";
 
-export default function Home() {
-  const [frameNumber, setFrameNumber] = useState<number>(0);
+export const getStaticProps: GetStaticProps = async (ctx) => {
+  const res = await axios.get<Group[]>("http://backend:8000/api/groups/");
 
+  return {
+    props: {
+      groups: res.data,
+    },
+  };
+};
+
+type PageProp = {
+  groups: Group[];
+};
+
+export default function Home({ groups }: PageProp) {
   return (
     <>
-      <img
-        src={`/outputs/video/ID/frame_000000000${frameNumber}.jpg`}
-        alt="test"
-        width={1080}
-        height={720}
-      />
-      <button
-        className="bg-blue-200 rounded-full p-3 transition hover:bg-blue-400 border-2 border-black"
-        onClick={() => {
-          setFrameNumber((prev) => prev + 1);
-        }}
-      >
-        count up
-      </button>
-      Frame: {frameNumber}
+      {groups.map((group) => (
+        <p key={`group-${group.name}`}>{group.name}</p>
+      ))}
     </>
   );
 }

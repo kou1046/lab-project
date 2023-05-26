@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-1pik-i+wug&k!0cn&bv3(mt$idf3h#kr6uk&88h$m#x96ixbrq
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["backend"]
 
 
 # Application definition
@@ -52,6 +52,8 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+CORS_ORIGIN_WHITELIST = ["http://frontned:3000"]
 
 ROOT_URLCONF = "api.urls"
 
