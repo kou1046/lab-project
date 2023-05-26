@@ -908,8 +908,17 @@ def deserialize_complement_ids(
         )
     with open(create_json, "r") as f:
         tmp: list[dict] = json.load(f)
-    create_ids: create_ids = []
+    create_ids: CreateIds = []
     for dict_ in tmp:
+        if "xmin" in dict_: #　古い入力を受け取った場合，最新の構成に修正
+            xmin = dict_.pop("xmin")
+            ymin = dict_.pop("ymin")
+            xmax = dict_.pop("xmax")
+            ymax = dict_.pop("ymax")
+            min = Point(xmin, ymin)
+            max = Point(xmax, ymax)
+            dict_["min"] = min
+            dict_["max"] = max
         create_ids.append(TrackingBoundingBox(**dict_))
     return monitor_ids, replace_ids, stopresume_ids, create_ids
 
