@@ -95,7 +95,7 @@ class CombinedFrameFactory:
         ds_jpg_data: DeepSortJpgData,
     ) -> CombinedFrame:
         self.frame_number += 1
-        if ds_csv_data.is_empty():
+        if ds_csv_data.is_empty() or op_data.is_empty():
             return CombinedFrame(self.group, [], ds_jpg_data.path, self.frame_number)
 
         keypoints = op_data.generate_keypoints()
