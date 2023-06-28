@@ -5,9 +5,13 @@ django の DB, ORM のみを使いたい場合, このファイルをインポ�
 """
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': os.environ["MYSQL_DATABASE"], 
+        "USER": os.environ["MYSQL_USER"],
+        "PASSWORD": os.environ["MYSQL_PASSWORD"],
+        "HOST": "db", 
+        "PORT": "3306"
     }
 }
 
