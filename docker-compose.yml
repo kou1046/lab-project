@@ -1,9 +1,29 @@
 version: "3"
 
 services:
+  db:
+    image: mysql:8.0.33
+    volumes:
+      - lab-db:/var/lib/mysql
+    env_file:
+      - ./db.env
+    ports:
+      - 3306:3306
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    ports:
+      - 8080:80
+    volumes:
+      - sessions:/sessions
+    env_file:
+      - ./phpadmin.env
+    depends_on:
+      - db
   backend:
     build: ./backend
     container_name: lab-backend
+    env_file:
+      - ./db.env
     volumes:
       - ./backend:/app
       - ./submodules/outputs:/outputs
@@ -11,6 +31,8 @@ services:
       - 8000:8000
     command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     tty: true
+    depends_on:
+      - db
     # deploy:
     #   resources:
     #     reservations:
@@ -28,3 +50,7 @@ services:
       - 3000:3000
     tty: true
     command: npm run dev
+
+volumes:
+  lab-db:
+  sessions:
