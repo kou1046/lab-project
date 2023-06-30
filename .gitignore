@@ -2,5 +2,6 @@ db.sqlite3
 submodules/outputs/
 /submodules/inputs/*
 migrations
+*env
 __pycache__/
 !.gitkeep
