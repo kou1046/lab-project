@@ -125,11 +125,11 @@ class FrameListSerializer(serializers.ListSerializer):
                 new_keypoints.append(new_keypoint)
                 new_people.append(new_person)
         with transaction.atomic():
+            Group.objects.bulk_create(new_groups, ignore_conflicts=True)
             Point.objects.bulk_create(new_points)
             ProbabilisticPoint.objects.bulk_create(new_probilistic_points)
             KeyPoint.objects.bulk_create(new_keypoints)
             BoundingBox.objects.bulk_create(new_boxes)
-            Group.objects.bulk_create(new_groups, ignore_conflicts=True)
             CombinedFrame.objects.bulk_create(new_frames)
             Person.objects.bulk_create(new_people)
         return new_frames
