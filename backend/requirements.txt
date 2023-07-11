@@ -11,6 +11,7 @@ openpyxl
 matplotlib
 dacite
 pillow
+questionary
 tqdm
 scipy
 scikit-learn

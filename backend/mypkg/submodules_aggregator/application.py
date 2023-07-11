@@ -1,7 +1,7 @@
 from __future__ import annotations
 import os
-from tkinter.filedialog import askdirectory
-from typing import Generator
+import questionary
+from typing import Generator, Callable
 import glob
 from dataclasses import asdict
 from tqdm import tqdm
@@ -26,6 +26,16 @@ from .framefactory import (
 from .preprocessor import Complementer
 
 
+def choice_output_by_cui():
+    outputs_dirs = glob.glob("/outputs/*")
+    if not outputs_dirs:
+        raise FileNotFoundError("/outputs にディレクトリが見つかりません．")
+    choiced_dir = questionary.select(f"{len(outputs_dirs)}個見つかりました．適用したいディレクトリを選択してください．", outputs_dirs).ask()
+    if not choiced_dir:
+        raise ValueError("ディレクトリを選択してください．")
+    return choiced_dir
+
+
 def complement_tracking():
     """
     __summary__:
@@ -33,10 +43,10 @@ def complement_tracking():
         アプリ動作中の補完情報は4つの補完ファイルに保存され, /outputs/{動画名のフォルダ}/complements/ に保存される．
     """
 
-    base_dir = askdirectory(initialdir="/outputs")
-    ids = glob.glob(f"{base_dir}/ID/*.csv")
-    jpgs = glob.glob(f"{base_dir}/ID/*.jpg")
-    creator = ComplementIdCreator(ids, jpgs, base_dir)
+    choiced_dir = choice_output_by_cui()
+    ids = glob.glob(f"{choiced_dir}/ID/*.csv")
+    jpgs = glob.glob(f"{choiced_dir}/ID/*.jpg")
+    creator = ComplementIdCreator(ids, jpgs, choiced_dir)
     creator.mainloop()
 
 
@@ -70,19 +80,18 @@ def group_data_generator(
             for data in creator:
                 save_frames_to_db(data) # 10000フレーム毎にDBに登録
     """
-    base_dir = askdirectory(initialdir="/outputs")
-    if not base_dir:
-        exit()
-    keypoint_jsons = glob.glob(os.path.join(base_dir, "keypoints", "*.json"))
-    id_csvs = glob.glob(os.path.join(base_dir, "ID", "*.csv"))
-    id_jpgs = glob.glob(os.path.join(base_dir, "ID", "*.jpg"))
+    choiced_dir = choice_output_by_cui()
+
+    keypoint_jsons = glob.glob(os.path.join(choiced_dir, "keypoints", "*.json"))
+    id_csvs = glob.glob(os.path.join(choiced_dir, "ID", "*.csv"))
+    id_jpgs = glob.glob(os.path.join(choiced_dir, "ID", "*.jpg"))
 
     assert len(keypoint_jsons) == len(id_csvs) == len(id_jpgs), "json, csv, jpgの数が一致しません"
 
     # complementsフォルダがある場合，補完を適用する
-    if os.path.exists(os.path.join(base_dir, "complements")):
+    if os.path.exists(os.path.join(choiced_dir, "complements")):
         complements_ids = [
-            os.path.join(base_dir, "complements", file_name)
+            os.path.join(choiced_dir, "complements", file_name)
             for file_name in (
                 monitor_filename,
                 replace_filename,
