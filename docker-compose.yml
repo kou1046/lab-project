@@ -5,8 +5,11 @@ services:
     image: mysql:8.0.33
     volumes:
       - lab-db:/var/lib/mysql
-    env_file:
-      - ./db.env
+    environment:
+      - MYSQL_ROOT_PASSWORD
+      - MYSQL_DATABASE
+      - MYSQL_USER
+      - MYSQL_PASSWORD
     ports:
       - 3306:3306
   phpmyadmin:
@@ -15,15 +18,19 @@ services:
       - 8080:80
     volumes:
       - sessions:/sessions
-    env_file:
-      - ./phpadmin.env
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=${MYSQL_USER}
+      - PMA_PASSWORD=${MYSQL_PASSWORD}
     depends_on:
       - db
   backend:
     build: ./backend
     container_name: lab-backend
-    env_file:
-      - ./db.env
+    environment:
+      - MYSQL_USER
+      - MYSQL_DATABASE
+      - MYSQL_PASSWORD
     volumes:
       - ./backend:/app
       - ./submodules/outputs:/outputs
@@ -40,16 +47,16 @@ services:
     #         - driver: nvidia
     #           count: 1
     #           capabilities: [gpu]
-  frontend:
-    build: ./frontend
-    container_name: lab-frontend
-    volumes:
-      - ./frontend:/app
-      - ./submodules/outputs:/app/public/outputs
-    ports:
-      - 3000:3000
-    tty: true
-    command: npm run dev
+  # frontend:
+  #   build: ./frontend
+  #   container_name: lab-frontend
+  #   volumes:
+  #     - ./frontend:/app
+  #     - ./submodules/outputs:/app/public/outputs
+  #   ports:
+  #     - 3000:3000
+  #   tty: true
+  #   command: npm run dev
 
 volumes:
   lab-db:
