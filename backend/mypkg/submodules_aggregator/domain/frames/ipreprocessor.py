@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from typing import Sequence
-
 import numpy as np
 
-from .intermediate_model import BoundingBox, CombinedFrame, KeyPoint, KeyPointAttr
+from boxes import BoundingBox
+from keypoints import KeyPoint, KeyPointAttr
+from frames import Frame
 
-from .complementidcreator import (
+from ....complementidcreator import (
     CreateIds,
     MonitorIds,
     ReplaceIds,
@@ -17,7 +17,7 @@ from .complementidcreator import (
 )
 
 
-class Preprocessor(metaclass=ABCMeta):
+class IPreprocessor(metaclass=ABCMeta):
     def __init__(self, base_point: KeyPointAttr):
         self.base_point: KeyPointAttr = base_point
 
@@ -27,7 +27,7 @@ class Preprocessor(metaclass=ABCMeta):
         boxes: list[BoundingBox],
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> tuple[list[KeyPoint], list[BoundingBox]]:
         keypoints = [self.preprocess_keypoint(keypoint, img, frame_num, prev_frame) for keypoint in keypoints]
         boxes = [self.preprocess_box(box, img, frame_num, prev_frame) for box in boxes]
@@ -44,7 +44,7 @@ class Preprocessor(metaclass=ABCMeta):
         keypoint: KeyPoint,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> KeyPoint:
         return keypoint
 
@@ -53,7 +53,7 @@ class Preprocessor(metaclass=ABCMeta):
         box: BoundingBox,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> BoundingBox:
         return box
 
@@ -62,7 +62,7 @@ class Preprocessor(metaclass=ABCMeta):
         keypoint: KeyPoint,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> bool:
         return True
 
@@ -71,12 +71,12 @@ class Preprocessor(metaclass=ABCMeta):
         box: BoundingBox,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> bool:
         return True
 
 
-class Complementer(Preprocessor):
+class Complementer(IPreprocessor):
     def __init__(
         self,
         monitor_json_path: str,
@@ -99,7 +99,7 @@ class Complementer(Preprocessor):
         boxes: list[BoundingBox],
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> tuple[list[KeyPoint], list[BoundingBox]]:
         if frame_num in self.replace_ids:  # 毎回キーとバリューを逆転して追加することでキーもバリューも最新の状態のみになるよう更新する
             new_invert_replace_dict = {do: done for done, do in self.replace_ids[frame_num].items()}
@@ -143,7 +143,7 @@ class Complementer(Preprocessor):
         box: BoundingBox,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> bool:
         if box.id not in self.monitor_ids:
             return False
@@ -160,7 +160,7 @@ class Complementer(Preprocessor):
         box: BoundingBox,
         img: np.ndarray,
         frame_num: int,
-        prev_frame: CombinedFrame | None,
+        prev_frame: Frame | None,
     ) -> BoundingBox:
         if box.id in self.replace_id_memo:
             replaced_id = self.replace_id_memo[box.id]

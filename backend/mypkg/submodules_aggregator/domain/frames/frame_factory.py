@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 import json
+import cv2
 from functools import reduce
 
 import numpy as np
 import pandas as pd
-from .intermediate_model import *
-from .preprocessor import Preprocessor
 from pandas.errors import EmptyDataError
+
+from ..boxes import BoundingBox, Point
+from ..keypoints import KeyPoint, ProbabilisticPoint
+from ..people import Person
+from .frame import Frame
+from .ipreprocessor import IPreprocessor
 
 
 class LoadedDataFromPath:
@@ -74,29 +79,26 @@ class DeepSortCsvData(LoadedDataFromPath):
         return [BoundingBox(row[0], Point(row[1], row[2]), Point(row[3], row[4])) for row in self.value.tolist()]
 
 
-class CombinedFrameFactory:
+class FrameFactory:
     def __init__(
         self,
-        group_name: str,
         base_point: str = "midhip",
-        group_cls=Group,
-        preprocessor: Preprocessor | None = None,
+        preprocessor: IPreprocessor | None = None,
     ):
         self.frame_number: int = 0
         self.base_point: str = base_point
-        self.group = group_cls(group_name)
         self.preprocessor = preprocessor
-        self.prev_frame: CombinedFrame | None = None
+        self.prev_frame: Frame | None = None
 
     def create(
         self,
         op_data: OpenPoseJsonData,
         ds_csv_data: DeepSortCsvData,
         ds_jpg_data: DeepSortJpgData,
-    ) -> CombinedFrame:
+    ) -> Frame:
         self.frame_number += 1
         if ds_csv_data.is_empty() or op_data.is_empty():
-            return CombinedFrame(self.group, [], ds_jpg_data.path, self.frame_number)
+            return Frame([], ds_jpg_data.path, self.frame_number)
 
         keypoints = op_data.generate_keypoints()
         boxes = ds_csv_data.generate_boxes()
@@ -153,6 +155,6 @@ class CombinedFrameFactory:
                 )
 
         subject_people = [Person(keypoint, box) for box, keypoint in chosen_items.items()]
-        combined_frame = CombinedFrame(self.group, subject_people, ds_jpg_data.path, self.frame_number)
+        combined_frame = Frame(subject_people, ds_jpg_data.path, self.frame_number)
         self.prev_frame = combined_frame
         return combined_frame
