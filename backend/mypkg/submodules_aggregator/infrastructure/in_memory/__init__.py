@@ -1,0 +1,1 @@
+from .in_memory_group_repository import InMemoryGroupRepository

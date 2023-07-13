@@ -5,4 +5,4 @@ from ..frames import Frame
 @dataclass(frozen=True)
 class Group:
     name: str
-    frames: list[Frame]
+    frames: set[Frame]

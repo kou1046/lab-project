@@ -1,0 +1,1 @@
+from .group_register_cli_application import GroupRegisterCLIApplication

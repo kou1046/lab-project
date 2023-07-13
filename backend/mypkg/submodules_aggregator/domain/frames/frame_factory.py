@@ -13,7 +13,7 @@ from .ipreprocessor import IPreprocessor
 
 class FrameFactory:
     def __init__(
-        self, 
+        self,
         frame_element_directory: FrameElementDirectory,
         base_point: str = "midhip",
         preprocessor: IPreprocessor | None = None,
@@ -26,11 +26,17 @@ class FrameFactory:
         self.preprocessor = preprocessor
         self.prev_frame: Frame | None = None
 
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.create()
+
     def create(
         self,
     ) -> Frame:
         self.frame_number += 1
-        
+
         op_json_path, ds_csv_path, ds_jpg_path = next(self.frame_element_directory)
         keypoints = self.keypoint_factory.create_instances(op_json_path)
         boxes = self.box_factory.create_instances(ds_csv_path)

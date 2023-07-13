@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 import cv2
 import numpy as np
@@ -9,6 +10,12 @@ class Frame:
     people: list[Person]
     img_path: str
     number: int
+
+    def __eq__(self, other: Frame):
+        return self.number == other.number
+
+    def __hash__(self):
+        return hash(self.number)
 
     @property
     def img(self):
