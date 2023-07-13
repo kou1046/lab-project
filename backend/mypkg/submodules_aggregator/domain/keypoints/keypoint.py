@@ -89,7 +89,7 @@ class KeyPoint:
     r_hell: ProbabilisticPoint
 
     def get_all_points(self) -> list[ProbabilisticPoint]:
-        return [getattr(self, point_name) for point_name in POINT_NAMES]
+        return [getattr(self, point_name) for point_name in self.NAMES]
 
     @property
     def face_angle(self) -> float | None:

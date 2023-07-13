@@ -1,1 +1,1 @@
-from . import application
+from .domain import *

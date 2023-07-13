@@ -1,90 +1,26 @@
 from __future__ import annotations
 
-import json
 import cv2
 from functools import reduce
 
-import numpy as np
-import pandas as pd
-from pandas.errors import EmptyDataError
-
-from ..boxes import BoundingBox, Point
-from ..keypoints import KeyPoint, ProbabilisticPoint
+from ..boxes import BoundingBox, Point, BoundingBoxFactory
+from ..keypoints import KeyPoint, KeypointFactory
 from ..people import Person
 from .frame import Frame
+from .frame_element_directory import FrameElementDirectory
 from .ipreprocessor import IPreprocessor
-
-
-class LoadedDataFromPath:
-    extension: str = ""
-
-    def __init__(self, path: str):
-        self.path = path
-        assert self._check_extension(), "拡張子が間違っています"
-
-    def _check_extension(self):
-        if not self.extension:
-            raise NotImplementedError("クラス変数extensionが定義されていません")
-        return self.path.split(".")[-1] == self.extension
-
-
-class OpenPoseJsonData(LoadedDataFromPath):
-    extension = "json"
-
-    def __init__(self, path: str):
-        super().__init__(path)
-        self.value: np.ndarray = self._read_json(path)
-
-    def _read_json(self, path: str):
-        with open(path, "r") as f:
-            item = json.load(f)
-        return np.array([np.array(person["pose_keypoints_2d"]).reshape(-1, 3) for person in item["people"]])
-
-    def is_empty(self):
-        return not self.value.any()
-
-    def generate_keypoints(self) -> list[KeyPoint]:
-        assert self.is_empty() == False, "人が見つかりません"
-        value = self.value.tolist()
-        keypoints: list[KeyPoint] = []
-        for row in value:
-            points = [ProbabilisticPoint(cell[0], cell[1], cell[2]) for cell in row]
-            keypoints.append(KeyPoint(*points))
-        return keypoints
-
-
-class DeepSortJpgData(LoadedDataFromPath):
-    extension = "jpg"
-
-
-class DeepSortCsvData(LoadedDataFromPath):
-    extension = "csv"
-
-    def __init__(self, path: str):
-        super().__init__(path)
-        self.value: np.ndarray | None = self._read_csv(path)
-
-    def _read_csv(self, path: str) -> np.ndarray | None:
-        try:
-            table = pd.read_csv(path).values
-        except EmptyDataError:
-            return None
-        return table
-
-    def is_empty(self):
-        return self.value is None
-
-    def generate_boxes(self) -> list[BoundingBox]:
-        assert self.is_empty() is not None, "人が見つかりません"
-        return [BoundingBox(row[0], Point(row[1], row[2]), Point(row[3], row[4])) for row in self.value.tolist()]
 
 
 class FrameFactory:
     def __init__(
-        self,
+        self, 
+        frame_element_directory: FrameElementDirectory,
         base_point: str = "midhip",
         preprocessor: IPreprocessor | None = None,
     ):
+        self.frame_element_directory = frame_element_directory
+        self.keypoint_factory = KeypointFactory()
+        self.box_factory = BoundingBoxFactory()
         self.frame_number: int = 0
         self.base_point: str = base_point
         self.preprocessor = preprocessor
@@ -92,22 +28,20 @@ class FrameFactory:
 
     def create(
         self,
-        op_data: OpenPoseJsonData,
-        ds_csv_data: DeepSortCsvData,
-        ds_jpg_data: DeepSortJpgData,
     ) -> Frame:
         self.frame_number += 1
-        if ds_csv_data.is_empty() or op_data.is_empty():
-            return Frame([], ds_jpg_data.path, self.frame_number)
-
-        keypoints = op_data.generate_keypoints()
-        boxes = ds_csv_data.generate_boxes()
+        
+        op_json_path, ds_csv_path, ds_jpg_path = next(self.frame_element_directory)
+        keypoints = self.keypoint_factory.create_instances(op_json_path)
+        boxes = self.box_factory.create_instances(ds_csv_path)
+        if keypoints is None or boxes is None:
+            return Frame([], ds_jpg_path, self.frame_number)
 
         if self.preprocessor is not None:
             keypoints, boxes = self.preprocessor.preprocess(
                 keypoints,
                 boxes,
-                cv2.imread(ds_jpg_data.path),
+                cv2.imread(ds_jpg_path),
                 self.frame_number,
                 self.prev_frame,
             )
@@ -155,6 +89,6 @@ class FrameFactory:
                 )
 
         subject_people = [Person(keypoint, box) for box, keypoint in chosen_items.items()]
-        combined_frame = Frame(subject_people, ds_jpg_data.path, self.frame_number)
+        combined_frame = Frame(subject_people, ds_jpg_path, self.frame_number)
         self.prev_frame = combined_frame
         return combined_frame

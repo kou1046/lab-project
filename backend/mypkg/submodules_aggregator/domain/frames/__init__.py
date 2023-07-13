@@ -1,3 +1,5 @@
 from .frame import Frame
 from .frame_factory import FrameFactory
-from .ipreprocessor import ipreprocessor
+from .frame_element_directory import FrameElementDirectory
+from .ipreprocessor import IPreprocessor
+

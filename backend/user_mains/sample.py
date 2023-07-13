@@ -1,6 +1,10 @@
-from mypkg.submodules_aggregator.application import application
-import pickle
 
-data_generator = application.group_data_generator(group_name="2022_ube_g2", base_point="neck")
-for data in data_generator:
-    application.save_group_to_db(data)
+import questionary
+import glob
+from mypkg.submodules_aggregator import *
+
+choiced = questionary.select("select output",glob.glob("/outputs/*")).ask()
+dir_ = FrameElementDirectory(choiced)
+factory = FrameFactory(dir_)
+factory.create()
+print()
