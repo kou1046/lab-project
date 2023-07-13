@@ -18,7 +18,7 @@ from ..domain.groups import Group
 
 
 class GroupRegisterCLIApplication:
-    REGISTER_CHUNK_FRAME_NUM = 50000
+    REGISTER_CHUNK_FRAME_NUM = 3000
 
     def __init__(self, group_repository: IGroupRepository):
         self.group_repository = group_repository
@@ -47,7 +47,10 @@ class GroupRegisterCLIApplication:
         if os.path.exists(complement_dir):
             f = lambda filename: os.path.join(complement_dir, filename)
             preprocessor = Complementer(
-                f(monitor_filename), f(replace_filename), f(stopresume_filename), f(create_filename)
+                f(monitor_filename),
+                f(replace_filename),
+                f(stopresume_filename),
+                f(create_filename),
             )
         else:
             preprocessor = None

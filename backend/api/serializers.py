@@ -67,16 +67,7 @@ class FrameSerializer(serializers.ModelSerializer):
     group = GroupSerializer()
 
     class Meta:
-        model = CombinedFrame
-        fields = ["group", "img_path", "people", "number"]
-
-
-class FrameSerializer(serializers.ModelSerializer):
-    people = PersonSerializer(many=True)
-    group = GroupSerializer()
-
-    class Meta:
-        model = CombinedFrame
+        model = Frame
         fields = ["group", "img_path", "people", "number"]
 
 
@@ -85,7 +76,7 @@ class LightFrameSerialiser(serializers.ModelSerializer):
     people = LightPersonSerializer(many=True)
 
     class Meta:
-        model = CombinedFrame
+        model = Frame
         fields = ["group", "img_path", "people", "number"]
 
 
@@ -104,7 +95,7 @@ class FrameListSerializer(serializers.ListSerializer):
             people = validated_data.pop("people")
             new_group = Group(**validated_data["group"])
             validated_data["group"] = new_group
-            new_frame = CombinedFrame(**validated_data)
+            new_frame = Frame(**validated_data)
             new_groups.append(new_group)
             new_frames.append(new_frame)
             for person in people:
@@ -130,7 +121,7 @@ class FrameListSerializer(serializers.ListSerializer):
             ProbabilisticPoint.objects.bulk_create(new_probilistic_points)
             KeyPoint.objects.bulk_create(new_keypoints)
             BoundingBox.objects.bulk_create(new_boxes)
-            CombinedFrame.objects.bulk_create(new_frames)
+            Frame.objects.bulk_create(new_frames)
             Person.objects.bulk_create(new_people)
         return new_frames
 
@@ -139,7 +130,7 @@ class ReadOnlyFrameSerializer(serializers.ModelSerializer):
     device = serializers.CharField(source="device.id")
 
     class Meta:
-        model = CombinedFrame
+        model = Frame
         fields = ["group", "frame", "id", "device", "people"]
 
 

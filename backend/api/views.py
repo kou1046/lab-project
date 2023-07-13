@@ -10,4 +10,4 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 
 class FrameViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = serializers.LightFrameSerialiser
-    queryset = models.CombinedFrame.objects.all()
+    queryset = models.Frame.objects.all()

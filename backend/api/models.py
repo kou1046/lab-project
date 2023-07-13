@@ -180,7 +180,7 @@ class KeyPoint(UUIDModel):
         return self.r_elbow.distance_to(self.l_elbow)
 
 
-class CombinedFrame(UUIDModel):
+class Frame(UUIDModel):
     class Meta:
         db_table = "frame"
         constraints = [models.UniqueConstraint(fields=["number", "group"], name="group_frame_num_unique")]
@@ -254,7 +254,7 @@ class MouseClick(UUIDModel):
     time = models.TimeField()
     x = models.IntegerField()
     y = models.IntegerField()
-    frame = models.OneToOneField(CombinedFrame, models.CASCADE, null=True)
+    frame = models.OneToOneField(Frame, models.CASCADE, null=True)
 
 
 class MouseRelease(UUIDModel):
@@ -264,7 +264,7 @@ class MouseRelease(UUIDModel):
     time = models.TimeField()
     x = models.IntegerField()
     y = models.IntegerField()
-    frame = models.OneToOneField(CombinedFrame, models.CASCADE, null=True)
+    frame = models.OneToOneField(Frame, models.CASCADE, null=True)
 
 
 class Device(UUIDModel):
@@ -272,7 +272,7 @@ class Device(UUIDModel):
         db_table = "device"
 
     screenshot_path = models.CharField(max_length=100)
-    frame = models.OneToOneField(CombinedFrame, models.CASCADE)
+    frame = models.OneToOneField(Frame, models.CASCADE)
     group = models.ForeignKey(Group, models.CASCADE, "devices")
     mouse_pos = models.ForeignKey(MousePos, models.PROTECT)
     mouse_click = models.OneToOneField(MouseClick, models.PROTECT, null=True)
@@ -306,7 +306,7 @@ class Person(UUIDModel):
 
     keypoint = models.OneToOneField(KeyPoint, models.CASCADE, related_name="person")
     box = models.OneToOneField(BoundingBox, models.CASCADE, related_name="person")
-    frame = models.ForeignKey(CombinedFrame, models.CASCADE, related_name="people")
+    frame = models.ForeignKey(Frame, models.CASCADE, related_name="people")
     group = models.ForeignKey(Group, models.CASCADE, related_name="people")
 
     @property
