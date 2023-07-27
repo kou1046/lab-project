@@ -1,6 +1,3 @@
-import questionary
-import glob
-
 from mypkg.submodules_aggregator import *
 
 repository = InMemoryGroupRepository()

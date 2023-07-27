@@ -17,5 +17,7 @@ scipy
 scikit-learn
 black
 isort
+pynput
+pyautogui
 # torch 
 # torchvision
