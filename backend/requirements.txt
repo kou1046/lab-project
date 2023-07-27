@@ -10,7 +10,6 @@ pillow
 openpyxl
 matplotlib
 dacite
-pillow
 questionary
 tqdm
 scipy
@@ -19,5 +18,7 @@ black
 isort
 pynput
 pyautogui
-# torch 
-# torchvision
+easyocr
+torch 
+torchvision
+pillow==9.5.0

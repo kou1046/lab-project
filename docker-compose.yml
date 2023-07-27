@@ -40,13 +40,13 @@ services:
     tty: true
     depends_on:
       - db
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
   # frontend:
   #   build: ./frontend
   #   container_name: lab-frontend
