@@ -4,3 +4,6 @@
 [submodule "backend/mypkg/device_logger"]
 	path = backend/mypkg/device_logger
 	url = https://github.com/kou1046/device_logger
+[submodule "backend/mypkg/uiflow_dom_logger"]
+	path = backend/mypkg/uiflow_dom_logger
+	url = http://github.com/kou1046/uiflow_dom_logger
