@@ -1,0 +1,11 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "ms-python.black-formatter",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "black-formatter.args": ["--line-length=120"],
+  "isort.args": ["--proflie", "black"],
+  "diffEditor.ignoreTrimWhitespace": true
+}
