@@ -55,15 +55,14 @@ class ImageCanvas(tk.Canvas):
         self.photo: ImageTk.PhotoImage | None = None
         self.img: np.ndarray | None = None
 
-    def update_img(self, img: np.ndarray):
+    def update_img(self, img: np.ndarray, rate: float = 1.0):
         if self.photo is not None:
             self.delete(self.img_id)
-        self.img = img
-        self.photo = ImageTk.PhotoImage(
-            Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB)), master=self
-        )
+        height, width, _ = [int(shape * rate) for shape in img.shape]
+        self.img = cv2.resize(img, (width, height))
+        self.photo = ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(self.img, cv2.COLOR_BGR2RGB)), master=self)
         self.img_id = self.create_image(0, 0, anchor="nw", image=self.photo)
-        self["height"], self["width"], _ = img.shape
+        self["height"], self["width"] = height, width
 
 
 class ScrollImageViewer(tk.LabelFrame, metaclass=ABCMeta):
@@ -118,9 +117,7 @@ class LiveLoadingViewer(ScrollImageViewer):
         **kw,
     ):
         self.img_paths: Sequence[str] = img_paths
-        self.add_drawing_func: None | Callable[
-            [np.ndarray, int], np.ndarray
-        ] = add_drawing_func
+        self.add_drawing_func: None | Callable[[np.ndarray, int], np.ndarray] = add_drawing_func
         super().__init__(master, **kw)
 
     @property
@@ -128,9 +125,7 @@ class LiveLoadingViewer(ScrollImageViewer):
         if self.add_drawing_func is None:
             return cv2.imread(self.img_paths[self.index])
         else:
-            return self.add_drawing_func(
-                cv2.imread(self.img_paths[self.index]), self.index
-            )
+            return self.add_drawing_func(cv2.imread(self.img_paths[self.index]), self.index)
 
     @property
     def img_len(self) -> int:
@@ -252,15 +247,11 @@ class ScrollFrame(tk.Frame):
             window=self._scrollable_frame,
         )
         if y:
-            self.scrollbar_y = tk.Scrollbar(
-                self, orient="vertical", command=canvas.yview
-            )
+            self.scrollbar_y = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
             self.scrollbar_y.pack(side=tk.RIGHT, fill="y")
             canvas.configure(yscrollcommand=self.scrollbar_y.set)
         if x:
-            self.scrollbar_x = tk.Scrollbar(
-                self, orient="horizontal", command=canvas.xview
-            )
+            self.scrollbar_x = tk.Scrollbar(self, orient="horizontal", command=canvas.xview)
             self.scrollbar_x.pack(side=tk.BOTTOM, fill="x")
             canvas.configure(xscrollcommand=self.scrollbar_x.set)
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -283,7 +274,6 @@ def color_change_hover(event):
 
 
 if __name__ == "__main__":
-
     base_dir = filedialog.askdirectory()
     img_paths = glob(os.path.join(base_dir, "*.jpg"))
     assert img_paths

@@ -22,6 +22,7 @@ from ...mylab_py_utils.mywidget import ScrollFrame, ImageCanvas, ContainerManage
 補完ファイル作成後はpreprocessor.py内のcomplementerのコンストラクタに4つのファイルパスを入力してインスタンス化し, boxandcombinerの引数にcomplementerを入力する.
 """
 
+
 @dataclass
 class FrameWithImgBoxes:
     img_path: str
@@ -365,7 +366,7 @@ CreateIds = list[TrackingBoundingBox]
 class ComplementTrackingApplication(tk.Tk):
     total_frame = 1
 
-    def __init__(self, id_csv_paths: Sequence[str], img_paths: Sequence[str], out_dir: str):
+    def __init__(self, id_csv_paths: Sequence[str], img_paths: Sequence[str], out_dir: str, viewer_rate: float = 1.0):
         super().__init__()
         if os.path.exists(os.path.join(out_dir, "complements")):
             (
@@ -416,8 +417,9 @@ class ComplementTrackingApplication(tk.Tk):
         self.option_selector: OptionSelector = OptionSelector(self.main_f, text="Option")
         init_img = self.frames[0].img
         height, width, _ = init_img.shape
+        self.viewer_rate = viewer_rate
         self.viewer: ImageCanvas = ImageCanvas(self.main_f, width=width, height=height)
-        self.viewer.update_img(init_img)
+        self.viewer.update_img(init_img, self.viewer_rate)
         self.viewer.index_ = 0  # ImageCanvasにindex_プロパティを追加している
         self.sub_viewer_frame = tk.Frame(self.main_f)
         self.clicked_person_viewer = ClikedPersonViewer(self.sub_viewer_frame)
@@ -462,8 +464,8 @@ class ComplementTrackingApplication(tk.Tk):
         self.create_list.pack(side=tk.LEFT)
         self.protocol("WM_DELETE_WINDOW", self._exit)
         self._create_btns()
-        self.viewer.bind("<Button-4>", self._viewer_update, "+")
-        self.viewer.bind("<Button-5>", self._viewer_update, "+")
+        self.viewer.bind("<MouseWheel>", self._viewer_update, "+")
+        self.viewer.bind("<MouseWheel>", self._viewer_update, "+")
 
     def _create_btns(self):
         def btn_cmd(e: tk.Event, pressed_name: str):  # ボタンを押されたときの処理．クリックバインドを有効化する．
@@ -550,13 +552,13 @@ class ComplementTrackingApplication(tk.Tk):
         prev_viewer_img = self.viewer.img
 
         if isinstance(e, tk.Event):
-            if e.num == 4 and self.viewer.index_ < len(self.frames) - 1:
+            if e.delta > 0 and self.viewer.index_ < len(self.frames) - 1:
                 self.viewer.index_ = (
                     (self.viewer.index_ + self.option_selector.skip)
                     if (self.frame_num + self.option_selector.skip < len(self.frames))
                     else len(self.frames) - 1
                 )
-            if e.num == 5 and self.viewer.index_ > 0:
+            if e.delta < 0 and self.viewer.index_ > 0:
                 self.viewer.index_ = (
                     (self.viewer.index_ - self.option_selector.skip)
                     if (self.frame_num - self.option_selector.skip >= 1)
@@ -612,7 +614,7 @@ class ComplementTrackingApplication(tk.Tk):
                     3,
                 )
 
-        self.viewer.update_img(new_viewer_img)
+        self.viewer.update_img(new_viewer_img, self.viewer_rate)
         self.main_f["text"] = f"フレーム:{self.frame_num}"
 
     def _add_monitor_id(self, id_):
@@ -672,7 +674,7 @@ class ComplementTrackingApplication(tk.Tk):
         if ymin > ymax:
             ymin, ymax = ymax, ymin
         added_img = self.viewer.img
-        self.viewer.update_img(added_img)
+        self.viewer.update_img(added_img, self.viewer_rate)
         added_box = TrackingBoundingBox(
             self.create_num,
             Point(xmin, ymin),
@@ -689,7 +691,9 @@ class ComplementTrackingApplication(tk.Tk):
         self, e: tk.Event, send_id_func: Callable[[int], Any]
     ):  # send_id_func:クリックしたときに実行する, コールバック関数．引数にはクリックしたidが渡される
         if e.widget is self.viewer:  # クリックしたウィジェットがメインビューワーだった時
-            clicked_boxes = self._completed_find_boxes_bypoint_inside((e.x, e.y))
+            clicked_boxes = self._completed_find_boxes_bypoint_inside(
+                (int(e.x // self.viewer_rate), int(e.y // self.viewer_rate))
+            )
             if not clicked_boxes:
                 return
             elif len(clicked_boxes) == 1:
@@ -763,9 +767,9 @@ class ComplementTrackingApplication(tk.Tk):
             __first_clicked_cor[0] = None
             return
         if __first_clicked_cor[0] is None:
-            __first_clicked_cor[0] = (e.x, e.y)
+            __first_clicked_cor[0] = (int(e.x // self.viewer_rate), int(e.y // self.viewer_rate))
         else:
-            second_clicked_cor = (e.x, e.y)
+            second_clicked_cor = (int(e.x // self.viewer_rate), int(e.y // self.viewer_rate))
             if __first_clicked_cor[0] == second_clicked_cor:
                 return
             send_cor_func(__first_clicked_cor[0], second_clicked_cor, **arg)
@@ -937,6 +941,7 @@ def get_scaled_rectangle(
         int(level * (cor - origin_cor) + origin_cor) for cor, origin_cor in zip(pt2, origin_pt)
     )
     return ((scaled_xmin, scaled_ymin), (scaled_xmax, scaled_ymax))
+
 
 class Complementer(IPreprocessor):
     def __init__(
