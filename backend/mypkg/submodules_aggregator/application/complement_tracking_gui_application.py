@@ -23,6 +23,10 @@ from ...mylab_py_utils.mywidget import ScrollFrame, ImageCanvas, ContainerManage
 """
 
 
+def os_is_windows():
+    return os.name == "nt"
+
+
 @dataclass
 class FrameWithImgBoxes:
     img_path: str
@@ -464,8 +468,12 @@ class ComplementTrackingApplication(tk.Tk):
         self.create_list.pack(side=tk.LEFT)
         self.protocol("WM_DELETE_WINDOW", self._exit)
         self._create_btns()
-        self.viewer.bind("<MouseWheel>", self._viewer_update, "+")
-        self.viewer.bind("<MouseWheel>", self._viewer_update, "+")
+
+        if os_is_windows():
+            self.viewer.bind("<MouseWheel>", self._viewer_update, "+")
+        else:
+            self.viewer.bind("<Button-4>", self._viewer_update, "+")
+            self.viewer.bind("<Button-5>", self._viewer_update, "+")
 
     def _create_btns(self):
         def btn_cmd(e: tk.Event, pressed_name: str):  # ボタンを押されたときの処理．クリックバインドを有効化する．
@@ -552,13 +560,20 @@ class ComplementTrackingApplication(tk.Tk):
         prev_viewer_img = self.viewer.img
 
         if isinstance(e, tk.Event):
-            if e.delta > 0 and self.viewer.index_ < len(self.frames) - 1:
+            if os_is_windows():
+                is_scroll_up = e.delta > 0
+            else:
+                is_scroll_up = e.num == 4
+                
+            is_scroll_down = not is_scroll_up
+
+            if is_scroll_up and self.viewer.index_ < len(self.frames) - 1:
                 self.viewer.index_ = (
                     (self.viewer.index_ + self.option_selector.skip)
                     if (self.frame_num + self.option_selector.skip < len(self.frames))
                     else len(self.frames) - 1
                 )
-            if e.delta < 0 and self.viewer.index_ > 0:
+            if is_scroll_down and self.viewer.index_ > 0:
                 self.viewer.index_ = (
                     (self.viewer.index_ - self.option_selector.skip)
                     if (self.frame_num - self.option_selector.skip >= 1)
@@ -924,6 +939,8 @@ def deserialize_complement_ids(
             max = Point(xmax, ymax)
             dict_["min"] = min
             dict_["max"] = max
+        dict_["min"] = Point(**dict_["min"])
+        dict_["max"] = Point(**dict_["max"])
         create_ids.append(TrackingBoundingBox(**dict_))
     return monitor_ids, replace_ids, stopresume_ids, create_ids
 
