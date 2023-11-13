@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from ..frames import Frame
+
+from submodules.deepsort_openpose.api.domain import Frame
 
 
 @dataclass(frozen=True)

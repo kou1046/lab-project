@@ -1,5 +1,5 @@
-from ..frames import Frame
-from .igroup_repository import IGroupRepository, Group
+from submodules.deepsort_openpose.api.domain import Frame
+from .igroup_repository import Group, IGroupRepository
 
 
 class GroupFactory:

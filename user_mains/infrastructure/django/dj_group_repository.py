@@ -1,15 +1,16 @@
 from __future__ import annotations
+
 from dataclasses import asdict
+
 from dacite import from_dict
+from ...domain.groups import IGroupRepository, Group
 
 from api import models
 from api.serializers import FrameListSerializer
-from ...domain.groups import IGroupRepository
-from ... import domain
 
 
 class DjGroupRepository(IGroupRepository):
-    def save(self, domain_group: domain.Group):
+    def save(self, domain_group: Group):
         serializer = FrameListSerializer(
             data=[{**asdict(frame), **{"group": {"name": domain_group.name}}} for frame in domain_group.frames]
         )
