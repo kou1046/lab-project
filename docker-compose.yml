@@ -47,17 +47,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-  # frontend:
-  #   build: ./frontend
-  #   container_name: lab-frontend
-  #   volumes:
-  #     - ./frontend:/app
-  #     - ./submodules/outputs:/app/public/outputs
-  #   ports:
-  #     - 3000:3000
-  #   tty: true
-  #   command: npm run dev
-
 volumes:
   lab-db:
   sessions:
