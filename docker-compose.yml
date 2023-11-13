@@ -25,15 +25,14 @@ services:
     depends_on:
       - db
   backend:
-    build: ./backend
+    build: ./
     container_name: lab-backend
     environment:
       - MYSQL_USER
       - MYSQL_DATABASE
       - MYSQL_PASSWORD
     volumes:
-      - ./backend:/app
-      - ./submodules/outputs:/outputs
+      - ./:/app
     ports:
       - 8000:8000
     command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"

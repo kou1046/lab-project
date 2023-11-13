@@ -1,6 +1,6 @@
 db.sqlite3
-submodules/outputs/
-/submodules/inputs/*
+outputs
+inputs
 migrations
 data
 *env
