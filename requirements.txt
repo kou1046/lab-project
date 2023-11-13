@@ -16,9 +16,8 @@ scipy
 scikit-learn
 black
 isort
-pynput
-pyautogui
-easyocr
 torch 
 torchvision
+beautifulsoup4
+python-dotenv
 pillow==9.5.0

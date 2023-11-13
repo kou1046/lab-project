@@ -1,6 +1,6 @@
 {
   "name": "lab-backend",
-  "dockerComposeFile": ["./../../docker-compose.yml"],
+  "dockerComposeFile": ["./../docker-compose.yml"],
   "service": "backend",
   "workspaceFolder": "/app",
   "shutdownAction": "none",
@@ -12,7 +12,7 @@
         "ms-python.python",
         "ms-python.black-formatter",
         "ms-python.isort"
-      ],
+      ]
     }
   }
 }

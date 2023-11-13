@@ -4,7 +4,7 @@ services:
   db:
     image: mysql:8.0.33
     volumes:
-      - lab-db:/var/lib/mysql
+      - 2023-db:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD
       - MYSQL_DATABASE
@@ -35,7 +35,7 @@ services:
       - ./:/app
     ports:
       - 8000:8000
-    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate
     tty: true
     depends_on:
       - db
@@ -47,5 +47,5 @@ services:
               count: 1
               capabilities: [gpu]
 volumes:
-  lab-db:
+  2023-db:
   sessions:

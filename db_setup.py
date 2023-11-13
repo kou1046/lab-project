@@ -1,17 +1,20 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv("./.env")
 
 """ 
 django の DB, ORM のみを使いたい場合, このファイルをインポートする．
 """
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.environ["MYSQL_DATABASE"], 
+    "default": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ["MYSQL_DATABASE"],
         "USER": os.environ["MYSQL_USER"],
         "PASSWORD": os.environ["MYSQL_PASSWORD"],
-        "HOST": "db", 
-        "PORT": "3306"
+        "HOST": "localhost",
+        "PORT": "3306",
     }
 }
 

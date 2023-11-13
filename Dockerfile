@@ -8,6 +8,6 @@ ENV PYTHONPATH /app
 
 COPY requirements.txt .
 RUN apt update && \ 
-    apt install -y tk libglib2.0-0 libsm6 libxrender1 libxext6 fonts-noto-cjk libgl1-mesa-dev
-        # python3 python3-pip python-tk sudo wget git vim
+    apt install -y tk libglib2.0-0 libsm6 libxrender1 libxext6 fonts-noto-cjk libgl1-mesa-dev less
+    
 RUN pip install -r requirements.txt
