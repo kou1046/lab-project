@@ -35,7 +35,7 @@ services:
       - ./:/app
     ports:
       - 8000:8000
-    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate
+    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate"
     tty: true
     depends_on:
       - db
