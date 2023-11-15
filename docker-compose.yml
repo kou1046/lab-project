@@ -1,7 +1,7 @@
 version: "3"
 
 services:
-  db:
+  2022-db:
     image: mysql:8.0.33
     volumes:
       - 2023-db:/var/lib/mysql
@@ -12,40 +12,40 @@ services:
       - MYSQL_PASSWORD
     ports:
       - 3306:3306
-  phpmyadmin:
-    image: phpmyadmin:5.2
-    ports:
-      - 8080:80
+  2023-db:
+    image: mysql:8.0.33
     volumes:
-      - sessions:/sessions
+      - 2023-db:/var/lib/mysql
     environment:
-      - PMA_HOST=db
-      - PMA_USER=${MYSQL_USER}
-      - PMA_PASSWORD=${MYSQL_PASSWORD}
-    depends_on:
-      - db
-  backend:
-    build: ./
-    container_name: lab-backend
-    environment:
-      - MYSQL_USER
+      - MYSQL_ROOT_PASSWORD
       - MYSQL_DATABASE
+      - MYSQL_USER
       - MYSQL_PASSWORD
-    volumes:
-      - ./:/app
     ports:
-      - 8000:8000
-    command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate"
-    tty: true
-    depends_on:
-      - db
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+      - 3307:3306
+  # backend:
+  #   build: ./
+  #   container_name: lab-backend
+  #   environment:
+  #     - MYSQL_USER
+  #     - MYSQL_DATABASE
+  #     - MYSQL_PASSWORD
+  #   volumes:
+  #     - ./:/app
+  #   ports:
+  #     - 8000:8000
+  #   command: /bin/bash -c "python manage.py makemigrations api && python manage.py migrate"
+  #   tty: true
+  #   depends_on:
+  #     - db
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
 volumes:
+  lab-db:
   2023-db:
   sessions:

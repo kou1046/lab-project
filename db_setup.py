@@ -15,7 +15,15 @@ DATABASES = {
         "PASSWORD": os.environ["MYSQL_PASSWORD"],
         "HOST": "localhost",
         "PORT": "3306",
-    }
+    },
+    "2023": {
+        "ENGINE": "django.db.backends.mysql",
+        "NAME": os.environ["MYSQL_DATABASE"],
+        "USER": os.environ["MYSQL_USER"],
+        "PASSWORD": os.environ["MYSQL_PASSWORD"],
+        "HOST": "localhost",
+        "PORT": "3307",
+    },
 }
 
 INSTALLED_APPS = ("api",)
