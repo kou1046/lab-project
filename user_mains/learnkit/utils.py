@@ -1,12 +1,17 @@
+from __future__ import annotations
+
 import os
 from torch.utils import data
-from typing import TypeVar, Generic, Sequence, Callable
+from typing import TypeVar, Generic, Sequence, Callable, Literal
+from pathlib import Path
 import db_setup
 from api import models
 import torch
 from torch import optim
 from torch import nn
 from tqdm import tqdm
+
+from submodules.deepsort_openpose.api.domain.points.point import Point
 
 T = TypeVar("T")
 
@@ -33,51 +38,105 @@ def model_compile(
     max_epoch: int,
     optim: optim.SGD,
     criterion: nn.Module,
-    save_dir: str,
+    save_dir: Path,
     checkpoints: Sequence[int] | None = None,
 ) -> None:
     """
     毎回学習する際ののひな型を書くのが面倒なので関数にしたもの．モデルの入力が画像のみの時なら使える.
     """
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    model.to(device)
+
     os.makedirs(save_dir, exist_ok=True)
     checkpoints = [max_epoch] if checkpoints is None else checkpoints
 
     train_accs = []
     test_accs = []
+
     for epoch in range(1, max_epoch + 1):
         sum_acc = 0
         model.train()
-        for imgs, t in tqdm(train_loader, total=len(train_loader)):
+        print(f"epoch: {epoch}/{max_epoch}")
+        for imgs, t in tqdm(train_loader):
+            imgs = imgs.to(device)
+            t = t.to(device)
+
             pred_y = model(imgs)
             loss = criterion(pred_y, t)
             model.zero_grad()
             loss.backward()
             optim.step()
             sum_acc += torch.sum(t == torch.argmax(pred_y, dim=1))
+
         print(f"train acc:{sum_acc/len(train_loader.dataset)}")
         train_accs.append(float(sum_acc / len(train_loader.dataset)))
+
         sum_acc = 0
         model.eval()
         with torch.no_grad():
             for imgs, t in val_loader:
+                imgs = imgs.to(device)
+                t = t.to(device)
+
                 pred_y = model(imgs)
                 sum_acc += torch.sum(t == torch.argmax(pred_y, dim=1))
-            print(f"test acc:{sum_acc/len(val_loader.dataset)} epoch {epoch}/{max_epoch} done.")
+            print(f"test acc:{sum_acc/len(val_loader.dataset)}")
             test_accs.append(float(sum_acc / len(val_loader.dataset)))
+
             if epoch in checkpoints:
                 ts = []
                 preds_ys = []
                 for imgs, t in val_loader:
                     ts += t.tolist()
                     preds_ys += torch.argmax(model(imgs), dim=1).tolist()
+
                 torch.save(
                     {
                         "epoch": epoch,
-                        "model_state_dict": model.state_dict(),
+                        "state_dict": model.state_dict(),
                         "train_accs": train_accs,
                         "test_accs": test_accs,
                         "test_pred_y": preds_ys,
                         "test_true_y": ts,
                     },
-                    os.path.join(os.path.join(save_dir, f"epoch_{epoch}_model.pth")),
+                    save_dir / f"epoch_{epoch}.pth",
                 )
+
+
+def extract_hand_area(
+    person: models.Person, dominant: Literal["right", "left"] = "right"
+) -> tuple[Point, Point] | None:
+    neck = person.keypoint.neck
+    shoulder = person.keypoint.r_shoulder if dominant == "right" else person.keypoint.l_shoulder
+    wrist = person.keypoint.r_wrist if dominant == "right" else person.keypoint.l_wrist
+
+    if not neck.p or not shoulder.p or not wrist.p:
+        return None
+
+    distance = neck.distance_to(shoulder)
+
+    xmin = wrist.x - distance
+    xmax = wrist.x + distance
+    ymin = wrist.y - distance
+    ymax = wrist.y + distance
+
+    return Point(xmin, ymin), Point(xmax, ymax)
+
+
+def augument_teacher_nearby_time(inference_model: models.InferenceModel, interval_frame: int = 5):
+    teachers: list[models.Teacher] = list(inference_model.teachers.all())
+    augumented_teachers: list[models.Teacher] = []
+
+    for teacher in teachers:
+        frame_number = teacher.person.frame.number
+        persons = models.Person.objects.filter(
+            group__name=teacher.person.group.name,
+            box__id=teacher.person.box.id,
+            frame__number__gt=frame_number - interval_frame,
+            frame__number__lt=frame_number + interval_frame,
+        )
+
+        tmp_teachers = [models.Teacher(person=person, label=teacher.label, model=inference_model) for person in persons]
+        augumented_teachers.extend(tmp_teachers)
+
+    return augumented_teachers

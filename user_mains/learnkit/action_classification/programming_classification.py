@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 from typing import Sequence
 from sklearn.model_selection import train_test_split
 
@@ -8,7 +8,6 @@ import torch
 from torch import nn, optim
 from torch.utils import data
 from torchvision import transforms
-
 
 from user_mains.learnkit import utils
 from api import models
@@ -87,33 +86,15 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
         return ts, probs
 
 
-def get_extracted_range(person: models.Person) -> tuple[models.Point, models.Point] | tuple[None, None]:
-    # if person.box.id == 5 and person.frame.group.name == "G5":  ## !!!lazyな変更　後で最適化
-    #     dominant = "left"
-    # else:
-    #     dominant = "right"
-    dominant = "right"
-    side_ = "r_" if dominant == "right" else "l_"
-    required_points: list[models.ProbabilisticPoint] = [
-        getattr(person.keypoint, attr) for attr in ("neck", side_ + "shoulder", side_ + "wrist")
-    ]
-    neck, shoulder, wrist = required_points
-    if not neck.p or not shoulder.p or not wrist.p:
-        return None, None, None, None
-
-    distance = neck.distance_to(shoulder)
-
-    xmin = wrist.x - distance
-    xmax = wrist.x + distance
-    ymin = wrist.y - distance
-    ymax = wrist.y + distance
-
-    return models.Point(xmin, ymin), models.Point(xmax, ymax)
-
-
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
-    min_point, max_point = get_extracted_range(person)
-    if min_point is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
+    hand_range = utils.extract_hand_area(person)
+
+    if hand_range is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
+        return torch.zeros((1, 160, 160))
+
+    min_point, max_point = hand_range
+
+    if min_point.x == max_point.x or min_point.y == max_point.y:
         return torch.zeros((1, 160, 160))
 
     transformer = transforms.Compose(
@@ -139,8 +120,14 @@ def train_transform(person: models.Person) -> tuple[torch.Tensor]:
 
 
 def val_transform(person: models.Person) -> tuple[torch.Tensor]:
-    min_point, max_point = get_extracted_range(person)
-    if min_point is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
+    hand_range = utils.extract_hand_area(person)
+
+    if hand_range is None or min_point.x == max_point.x or min_point.y == max_point.y:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
+        return torch.zeros((1, 160, 160))
+
+    min_point, max_point = hand_range
+
+    if min_point.x == max_point.x or min_point.y == max_point.y:
         return torch.zeros((1, 160, 160))
 
     transformer = transforms.Compose(
@@ -162,17 +149,8 @@ def val_transform(person: models.Person) -> tuple[torch.Tensor]:
     return transformer(person_target_img)
 
 
-def collate_fn(batch: list[tuple[torch.Tensor, int]]) -> tuple[torch.Tensor, torch.Tensor]:
-    imgs = []
-    labels = []
-    for sample, t in batch:
-        imgs.append(sample)
-        labels.append(t)
-    return torch.stack(imgs).to("cuda"), torch.Tensor(labels).long().to("cuda")
-
-
 if __name__ == "__main__":
-    estimator = models.InferenceModel.objects.get(name="Programming")
+    estimator = models.InferenceModel.objects.get(name="programming")
 
     teachers = estimator.teachers
     train, test = train_test_split(list(teachers.all()))
@@ -182,10 +160,10 @@ if __name__ == "__main__":
 
     train_set = utils.TeacherDataset(train, train_transform)
     test_set = utils.TeacherDataset(test, val_transform)
-    train_loader = data.DataLoader(train_set, batch_size, collate_fn=collate_fn)
-    test_loader = data.DataLoader(test_set, batch_size, collate_fn=collate_fn)
+    train_loader = data.DataLoader(train_set, batch_size)
+    test_loader = data.DataLoader(test_set, batch_size)
 
-    model = ProgrammingClassifier().to("cuda")
+    model = ProgrammingClassifier()
     optim_ = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
     checkpoints = [100, 150, 200, 230, 250, 270, 300, 400, 500]
@@ -197,6 +175,6 @@ if __name__ == "__main__":
         max_epoch,
         optim_,
         criterion,
-        os.path.join(os.path.dirname(__file__), "models", "programming_classifier"),
+        Path("./user_mains/learnkit/models/programming_classifier"),
         checkpoints,
     )
