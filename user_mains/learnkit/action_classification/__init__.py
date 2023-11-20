@@ -1,1 +1,2 @@
 from .programming_classification import ProgrammingClassifier
+from .watching_display_classification import WatchingDisplayClassifier

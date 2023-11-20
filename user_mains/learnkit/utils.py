@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import numpy as np
 from torch.utils import data
 from typing import TypeVar, Generic, Sequence, Callable, Literal
 from pathlib import Path
@@ -140,3 +141,27 @@ def augument_teacher_nearby_time(inference_model: models.InferenceModel, interva
         augumented_teachers.extend(tmp_teachers)
 
     return augumented_teachers
+
+
+def extract_face_area(person: models.Person) -> tuple[Point, Point] | None:
+    r_eye = person.keypoint.r_eye
+    l_eye = person.keypoint.l_eye
+    nose = person.keypoint.nose
+    r_ear = person.keypoint.r_ear
+    l_ear = person.keypoint.l_ear
+
+    if not r_eye.p or not l_eye.p or not nose.p or not r_ear.p or not l_ear.p:
+        return None
+
+    eye_center_point = Point(
+        (person.keypoint.l_eye.x + person.keypoint.r_eye.x) / 2, (person.keypoint.l_eye.y + person.keypoint.r_eye.y) / 2
+    )
+
+    dis_between_nose_eye = nose.distance_to(eye_center_point)
+
+    ymin = int(eye_center_point.y - 2 * dis_between_nose_eye)
+    ymax = int(eye_center_point.y + 2 * dis_between_nose_eye)
+    xmin = int(min([r_ear.x, l_ear.x])) - int(dis_between_nose_eye)
+    xmax = int(max([r_ear.x, l_ear.x])) + int(dis_between_nose_eye)
+
+    return Point(xmin, ymin), Point(xmax, ymax)
