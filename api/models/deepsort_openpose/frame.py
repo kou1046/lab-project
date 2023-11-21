@@ -9,14 +9,15 @@ from .group import Group
 
 
 class Frame(UUIDModel):
-    class Meta:
-        db_table = "frame"
-        constraints = [models.UniqueConstraint(fields=["number", "group"], name="group_frame_num_unique")]
-
     number = models.IntegerField()
     img_path = models.CharField(max_length=100)
     group = models.ForeignKey(Group, models.CASCADE, related_name="frames")
     # people (逆参照)
+
+    class Meta:
+        db_table = "frame"
+        constraints = [models.UniqueConstraint(fields=["number", "group"], name="group_frame_num_unique")]
+        ordering = ("number",)
 
     @property
     def img(self) -> np.ndarray:
