@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-import numpy as np
 from torch.utils import data
-from typing import TypeVar, Generic, Sequence, Callable, Literal
+from typing import Sequence, Literal
 from pathlib import Path
 import db_setup
 from api import models
@@ -13,23 +12,6 @@ from torch import nn
 from tqdm import tqdm
 
 from submodules.deepsort_openpose.api.domain.points.point import Point
-
-T = TypeVar("T")
-
-
-class TeacherDataset(data.Dataset, Generic[T]):
-    def __init__(self, teachers: Sequence[models.Teacher], transform: Callable[[models.Person], T] | None = None):
-        self.teachers = teachers
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.teachers)
-
-    def __getitem__(self, index: int):
-        teacher = self.teachers[index]
-        if self.transform is not None:
-            return self.transform(teacher.person), teacher.label
-        return teacher.person.img, teacher.label
 
 
 def model_compile(
@@ -88,8 +70,11 @@ def model_compile(
                 ts = []
                 preds_ys = []
                 for imgs, t in val_loader:
-                    ts += t.tolist()
-                    preds_ys += torch.argmax(model(imgs), dim=1).tolist()
+                    imgs = imgs.to(device)
+                    t = t.to("cpu").tolist()
+                    ts.extend(t)
+
+                    preds_ys.extend(torch.argmax(model(imgs), dim=1).to("cpu").tolist())
 
                 torch.save(
                     {
@@ -98,7 +83,7 @@ def model_compile(
                         "train_accs": train_accs,
                         "test_accs": test_accs,
                         "test_pred_y": preds_ys,
-                        "test_true_y": ts,
+                        "test_true_y": t,
                     },
                     save_dir / f"epoch_{epoch}.pth",
                 )

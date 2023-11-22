@@ -131,31 +131,9 @@ def val_transform(person: models.Person):
     return img
 
 
-def train_classifier(train_dataset: ProgrammingClassifierDataset, test_dataset: ProgrammingClassifierDataset):
-    model = WatchingDisplayClassifier()
-    optim_ = optim.Adam(model.parameters())
-    criterion = nn.CrossEntropyLoss()
-
-    batch_size = 16
-    train_loader = data.DataLoader(train_dataset, batch_size)
-    test_loader = data.DataLoader(test_dataset, batch_size)
-    checkpoints = [50, 100, 150, 200, 230, 250, 300]
-
-    utils.model_compile(
-        model,
-        train_loader,
-        test_loader,
-        300,
-        optim_,
-        criterion,
-        Path("./submodules/user_mains/learnkit/models/watching_classifier"),
-        checkpoints,
-    )
-
-
 if __name__ == "__main__":
 
-    class ProgrammingClassifierDataset(data.Dataset):
+    class WatchingDisplayClassifierDataset(data.Dataset):
         def __init__(self, dataset: Sequence[models.Teacher], transform=Callable[[models.Person], torch.Tensor]):
             self.dataset = dataset
             self.transform = transform
@@ -171,12 +149,33 @@ if __name__ == "__main__":
                 return teacher.person, label
             return self.transform(teacher.person), label
 
-    inference_model = models.InferenceModel.objects.get(name="held_item")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"device: {device}")
 
-    teachers = utils.augument_teacher_nearby_time(inference_model)
-    train, test = train_test_split(list(teachers))
+    inference_model = models.InferenceModel.objects.get(name="gaze_location")
+    teachers = utils.augument_teacher_nearby_time(inference_model, interval_frame=2)
+    train, test = train_test_split(teachers)
+    print(f"train: {len(train)}, test: {len(test)}")
 
-    train_dataset = ProgrammingClassifierDataset(train, transform=train_transform)
-    test_dataset = ProgrammingClassifierDataset(test, transform=val_transform)
+    model = WatchingDisplayClassifier()
+    train_dataset = WatchingDisplayClassifierDataset(train, transform=train_transform)
+    test_dataset = WatchingDisplayClassifierDataset(test, transform=val_transform)
 
-    train_classifier(train_dataset, test_dataset)
+    optim_ = optim.Adam(model.parameters())
+    criterion = nn.CrossEntropyLoss()
+
+    batch_size = 128
+    train_loader = data.DataLoader(train_dataset, batch_size)
+    test_loader = data.DataLoader(test_dataset, batch_size)
+    checkpoints = [50, 100, 150, 200, 230, 250, 300]
+
+    utils.model_compile(
+        model,
+        train_loader,
+        test_loader,
+        300,
+        optim_,
+        criterion,
+        Path("./user_mains/learnkit/models/watching_display_classifier"),
+        checkpoints,
+    )

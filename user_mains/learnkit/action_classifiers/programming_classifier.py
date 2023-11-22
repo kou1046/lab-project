@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Callable
 from sklearn.model_selection import train_test_split
 
 import torch
@@ -150,23 +150,40 @@ def val_transform(person: models.Person) -> tuple[torch.Tensor]:
 
 
 if __name__ == "__main__":
-    estimator = models.InferenceModel.objects.get(name="programming")
 
-    teachers = estimator.teachers
-    train, test = train_test_split(list(teachers.all()))
+    class ProgrammingClassifierDataset(data.Dataset):
+        def __init__(self, dataset: Sequence[models.Teacher], transform=Callable[[models.Person], torch.Tensor]):
+            self.dataset = dataset
+            self.transform = transform
 
-    batch_size = 16
+        def __len__(self):
+            return len(self.dataset)
+
+        def __getitem__(self, index: int):
+            teacher = self.dataset[index]
+            label = 1 if teacher.label == 1 else 0
+
+            if not self.transform:
+                return teacher.person, label
+            return self.transform(teacher.person), label
+
+    inference_model = models.InferenceModel.objects.get(name="held_item")
+
+    teachers = utils.augument_teacher_nearby_time(inference_model, interval_frame=5)
+    train, test = train_test_split(teachers)
+
+    batch_size = 128
     max_epoch = 500
 
-    train_set = utils.TeacherDataset(train, train_transform)
-    test_set = utils.TeacherDataset(test, val_transform)
+    train_set = ProgrammingClassifierDataset(train, train_transform)
+    test_set = ProgrammingClassifierDataset(test, val_transform)
     train_loader = data.DataLoader(train_set, batch_size)
     test_loader = data.DataLoader(test_set, batch_size)
 
     model = ProgrammingClassifier()
     optim_ = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
-    checkpoints = [100, 150, 200, 230, 250, 270, 300, 400, 500]
+    checkpoints = [50, 100, 150, 200, 230, 250, 300]
 
     utils.model_compile(
         model,
