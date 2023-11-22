@@ -13,3 +13,6 @@ class InferenceModel(UUIDModel):
 
     def __str__(self):
         return self.name
+
+    def labels(self) -> list[int]:
+        return [int(desc) for desc in self.label_description if desc.isdigit()]

@@ -21,7 +21,7 @@ class Frame(UUIDModel):
 
     @property
     def img(self) -> np.ndarray:
-        return cv2.imread(self.img_path)
+        return cv2.imread(self.img_path.replace("\\", "/"))
 
     @property
     def img_base64(self) -> str:

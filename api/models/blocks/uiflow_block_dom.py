@@ -20,7 +20,7 @@ class UIFlowBlockDOM(UUIDModel):
         db_table = "uiflow_block_dom"
 
     def to_datamodel(self) -> blocks.UiflowBlockDOM:
-        return blocks.UiflowBlockDOM(self.date.timestamp() * 1000, self.html)
+        return blocks.UiflowBlockDOM(self.timestamp, self.html)
 
     def blocks(self) -> blocks.Block:
         return block_factory.create_instances(self.html)
