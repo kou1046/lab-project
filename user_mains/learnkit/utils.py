@@ -54,11 +54,11 @@ def model_compile(
         sum_acc = 0
         model.train()
         print(f"epoch: {epoch}/{max_epoch}")
-        for imgs, t in tqdm(train_loader):
-            imgs = imgs.to(device)
+        for xs, t in tqdm(train_loader):
+            xs = [x.to(device) for x in xs]
             t = t.to(device)
 
-            pred_y = model(imgs)
+            pred_y = model(*xs)
             loss = criterion(pred_y, t)
             model.zero_grad()
             loss.backward()
@@ -71,11 +71,11 @@ def model_compile(
         sum_acc = 0
         model.eval()
         with torch.no_grad():
-            for imgs, t in val_loader:
-                imgs = imgs.to(device)
+            for xs, t in tqdm(val_loader):
+                xs = [x.to(device) for x in xs]
                 t = t.to(device)
 
-                pred_y = model(imgs)
+                pred_y = model(*xs)
                 sum_acc += torch.sum(t == torch.argmax(pred_y, dim=1))
             print(f"test acc:{sum_acc/len(val_loader.dataset)}")
             test_accs.append(float(sum_acc / len(val_loader.dataset)))
@@ -83,12 +83,12 @@ def model_compile(
             if epoch in checkpoints:
                 ts = []
                 preds_ys = []
-                for imgs, t in val_loader:
-                    imgs = imgs.to(device)
+                for xs, t in val_loader:
+                    xs = [x.to(device) for x in xs]
                     t = t.to("cpu").tolist()
                     ts.extend(t)
 
-                    preds_ys.extend(torch.argmax(model(imgs), dim=1).to("cpu").tolist())
+                    preds_ys.extend(torch.argmax(model(*xs), dim=1).to("cpu").tolist())
 
                 torch.save(
                     {

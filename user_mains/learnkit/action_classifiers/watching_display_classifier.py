@@ -146,14 +146,16 @@ if __name__ == "__main__":
             label = 1 if teacher.label == 1 else 0
 
             if not self.transform:
-                return teacher.person, label
-            return self.transform(teacher.person), label
+                return (teacher.person,), label
+            return (self.transform(teacher.person),), label
+
+    utils.torch_fix_seed()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"device: {device}")
 
     inference_model = models.InferenceModel.objects.get(name="gaze_location")
-    teachers = utils.augument_teacher_nearby_time(inference_model, interval_frame=2)
+    teachers = utils.augument_teacher_nearby_time(inference_model)
     train, test = train_test_split(teachers)
     print(f"train: {len(train)}, test: {len(test)}")
 

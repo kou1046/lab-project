@@ -12,12 +12,14 @@ from torchvision import transforms
 from user_mains.learnkit import utils
 from api import models
 
+TRAIN_KEYPOINT_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 15, 16, 17, 18]  # 　上半身のみ
 
-class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
-    def __init__(self, pretrained_model_path: str = None):
+
+class ProgrammingClassifier2(nn.Module):
+    def __init__(self):
         super().__init__()
 
-        self.block_1 = nn.Sequential(
+        self.cnn_1 = nn.Sequential(
             nn.Conv2d(1, 32, 3),
             nn.BatchNorm2d(32),
             nn.ReLU(),
@@ -28,7 +30,7 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
             nn.MaxPool2d(2, 2),
         )
 
-        self.block_2 = nn.Sequential(
+        self.cnn_2 = nn.Sequential(
             nn.Conv2d(32, 64, 3),
             nn.BatchNorm2d(64),
             nn.ReLU(),
@@ -41,8 +43,17 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
             nn.MaxPool2d(2, 2),
         )
 
-        self.block_3 = nn.Sequential(
-            nn.Linear(4096, 512),
+        self.keypoints_layer = nn.Sequential(
+            nn.Linear(2, 32),
+            nn.ReLU(),
+            nn.Linear(32, 64),
+            nn.ReLU(),
+            nn.Linear(64, 128),
+            nn.ReLU(),
+        )
+
+        self.dense = nn.Sequential(
+            nn.Linear(4096 + (len(TRAIN_KEYPOINT_INDICES) * 128), 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
             nn.Dropout(0.5),
@@ -53,37 +64,17 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
             nn.Linear(512, 2),
         )
 
-        if pretrained_model_path is not None:
-            self.load_state_dict(
-                torch.load(
-                    pretrained_model_path,
-                )["model_state_dict"]
-            )
-            self.eval()
+    def forward(self, imgs, keypoints):
+        imgs = self.cnn_1(imgs)
+        imgs = self.cnn_2(imgs)
+        keypoints = self.keypoints_layer(keypoints)
 
-    def forward(self, x):
-        y = self.block_1(x)
-        y = self.block_2(y)
-        y = y.view(x.shape[0], -1)
-        y = self.block_3(y)
+        flat_imgs = imgs.view(imgs.shape[0], -1)
+        flat_keypoints = keypoints.view(imgs.shape[0], -1)
+
+        y = torch.cat((flat_imgs, flat_keypoints), 1)
+        y = self.dense(y)
         return y
-
-    def predict_from_people(self, people: Sequence[models.Person], device: str = "cpu") -> list[int, list[float]]:  # 推論
-        imgs = []
-        if not people:
-            return [], []
-        for person in people:
-            imgs.append(val_transform(person).to(device))
-        result = self(torch.stack(imgs))
-        ts = torch.argmax(result, dim=1).tolist()
-        probs = torch.softmax(result, dim=1).tolist()
-        if not any(ts) and people[0].frame.group.name == "G3":  # Group3のみマウスが映らないことが多いので特定の処理を追加する
-            r_wrist_ys = [person.keypoints.r_wrist.y for person in people]
-            r_wrist_max_y = max(r_wrist_ys)
-            if r_wrist_max_y > 670:
-                predict_index = r_wrist_ys.index(r_wrist_max_y)
-                ts[predict_index] = 1
-        return ts, probs
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -133,7 +124,7 @@ def val_transform(person: models.Person) -> tuple[torch.Tensor]:
 
     hand_range = utils.extract_hand_area(person, dominant)
 
-    if hand_range is None:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す．
+    if hand_range is None:  # 切り抜きに必要な関節が欠けているなら，ダミーを返す.
         return torch.zeros((1, 160, 160))
 
     min_point, max_point = hand_range
@@ -162,7 +153,7 @@ def val_transform(person: models.Person) -> tuple[torch.Tensor]:
 
 if __name__ == "__main__":
 
-    class ProgrammingClassifierDataset(data.Dataset):
+    class ProgrammingClassifier2Dataset(data.Dataset):
         def __init__(self, dataset: Sequence[models.Teacher], transform=Callable[[models.Person], torch.Tensor]):
             self.dataset = dataset
             self.transform = transform
@@ -172,11 +163,12 @@ if __name__ == "__main__":
 
         def __getitem__(self, index: int):
             teacher = self.dataset[index]
+            preprocessed_keypoints = utils.preprocess_keypoint(teacher.person.keypoint, "neck")[TRAIN_KEYPOINT_INDICES]
             label = 1 if teacher.label == 1 else 0
 
             if not self.transform:
-                return (teacher.person,), label
-            return (self.transform(teacher.person),), label
+                return (teacher.person, preprocessed_keypoints), label
+            return (self.transform(teacher.person), preprocessed_keypoints), label
 
     utils.torch_fix_seed()
 
@@ -185,15 +177,15 @@ if __name__ == "__main__":
     teachers = utils.augument_teacher_nearby_time(inference_model)
     train, test = train_test_split(teachers)
 
-    batch_size = 64
+    batch_size = 128
     max_epoch = 300
 
-    train_set = ProgrammingClassifierDataset(train, train_transform)
-    test_set = ProgrammingClassifierDataset(test, val_transform)
+    train_set = ProgrammingClassifier2Dataset(train, train_transform)
+    test_set = ProgrammingClassifier2Dataset(test, val_transform)
     train_loader = data.DataLoader(train_set, batch_size)
     test_loader = data.DataLoader(test_set, batch_size)
 
-    model = ProgrammingClassifier()
+    model = ProgrammingClassifier2()
     optim_ = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
     checkpoints = [50, 100, 150, 200, 230, 250, 300]
@@ -205,6 +197,6 @@ if __name__ == "__main__":
         max_epoch,
         optim_,
         criterion,
-        Path("./user_mains/learnkit/models/programming_classifier"),
+        Path("./user_mains/learnkit/models/programming_classifier2"),
         checkpoints,
     )
