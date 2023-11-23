@@ -12,6 +12,7 @@ from torchvision import transforms
 from user_mains.learnkit import utils
 from api import models
 
+SAVE_DIR = Path(__file__).parent / "models" / "programming_classifier2"
 TRAIN_KEYPOINT_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 15, 16, 17, 18]  # 　上半身のみ
 
 
@@ -75,6 +76,9 @@ class ProgrammingClassifier2(nn.Module):
         y = torch.cat((flat_imgs, flat_keypoints), 1)
         y = self.dense(y)
         return y
+
+    def load_pretrained_data(self, device: str = "cpu"):
+        return torch.load(SAVE_DIR / "epoch_250.pth", map_location=device)
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -197,6 +201,6 @@ if __name__ == "__main__":
         max_epoch,
         optim_,
         criterion,
-        Path("./user_mains/learnkit/models/programming_classifier2"),
+        SAVE_DIR,
         checkpoints,
     )

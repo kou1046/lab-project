@@ -12,6 +12,8 @@ from torchvision import transforms
 from user_mains.learnkit import utils
 from api import models
 
+SAVE_DIR = Path(__file__).parent / "models" / "micro_computer_classifier"
+
 
 class MicroComputerClassifier(nn.Module):
     def __init__(self):
@@ -59,6 +61,9 @@ class MicroComputerClassifier(nn.Module):
         y = y.view(x.shape[0], -1)
         y = self.block_3(y)
         return y
+
+    def load_pretrained_data(self, device: str = "cpu"):
+        return torch.load(SAVE_DIR / "epoch_50.pth", map_location=device)
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -180,6 +185,6 @@ if __name__ == "__main__":
         max_epoch,
         optim_,
         criterion,
-        Path("./user_mains/learnkit/models/micro_computer_classifier"),
+        SAVE_DIR,
         checkpoints,
     )

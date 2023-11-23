@@ -13,6 +13,8 @@ import db_setup
 from api import models
 from user_mains.learnkit import utils
 
+SAVE_DIR = Path(__file__).parent / "models" / "watching_display_classifier"
+
 
 class WatchingDisplayClassifier(nn.Module):
     def __init__(self):
@@ -61,13 +63,9 @@ class WatchingDisplayClassifier(nn.Module):
         y = self.block_3(y)
         return y
 
-    def predict_from_people(self, people: list[models.Person], device="cpu") -> list[int]:  # 推論
-        imgs: list[torch.Tensor] = []
-        if not people:
-            return []
-        for person in people:
-            imgs.append(val_transform(person))
-        return torch.argmax(self(torch.stack(imgs).to(device)), dim=1).to(device).tolist()
+
+    def load_pretrained_data(self, device: str = "cpu"):
+        return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
 
 
 def train_transform(
@@ -178,6 +176,6 @@ if __name__ == "__main__":
         300,
         optim_,
         criterion,
-        Path("./user_mains/learnkit/models/watching_display_classifier"),
+        SAVE_DIR,
         checkpoints,
     )

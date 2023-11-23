@@ -12,6 +12,8 @@ from torchvision import transforms
 from user_mains.learnkit import utils
 from api import models
 
+SAVE_DIR = Path(__file__).parent / "models" / "programming_classifier"
+
 
 class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
     def __init__(self, pretrained_model_path: str = None):
@@ -84,6 +86,9 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
                 predict_index = r_wrist_ys.index(r_wrist_max_y)
                 ts[predict_index] = 1
         return ts, probs
+
+    def load_pretrained_data(self, device: str = "cpu"):
+        return torch.load(SAVE_DIR / "epoch_250.pth", map_location=device)
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -205,6 +210,6 @@ if __name__ == "__main__":
         max_epoch,
         optim_,
         criterion,
-        Path("./user_mains/learnkit/models/programming_classifier"),
+        SAVE_DIR,
         checkpoints,
     )
