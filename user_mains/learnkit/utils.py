@@ -81,12 +81,12 @@ def model_compile(
             test_accs.append(float(sum_acc / len(val_loader.dataset)))
 
             if epoch in checkpoints:
-                ts = []
+                true_ts = []
                 preds_ys = []
                 for xs, t in val_loader:
                     xs = [x.to(device) for x in xs]
                     t = t.to("cpu").tolist()
-                    ts.extend(t)
+                    true_ts.extend(t)
 
                     preds_ys.extend(torch.argmax(model(*xs), dim=1).to("cpu").tolist())
 
@@ -97,7 +97,7 @@ def model_compile(
                         "train_accs": train_accs,
                         "test_accs": test_accs,
                         "test_pred_y": preds_ys,
-                        "test_true_y": t,
+                        "test_true_y": true_ts,
                     },
                     save_dir / f"epoch_{epoch}.pth",
                 )
