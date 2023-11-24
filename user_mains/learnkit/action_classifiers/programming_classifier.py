@@ -55,14 +55,6 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
             nn.Linear(512, 2),
         )
 
-        if pretrained_model_path is not None:
-            self.load_state_dict(
-                torch.load(
-                    pretrained_model_path,
-                )["model_state_dict"]
-            )
-            self.eval()
-
     def forward(self, x):
         y = self.block_1(x)
         y = self.block_2(y)
@@ -70,25 +62,19 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
         y = self.block_3(y)
         return y
 
-    def predict_from_people(self, people: Sequence[models.Person], device: str = "cpu") -> list[int, list[float]]:  # 推論
-        imgs = []
-        if not people:
-            return [], []
-        for person in people:
-            imgs.append(val_transform(person).to(device))
-        result = self(torch.stack(imgs))
-        ts = torch.argmax(result, dim=1).tolist()
-        probs = torch.softmax(result, dim=1).tolist()
-        if not any(ts) and people[0].frame.group.name == "G3":  # Group3のみマウスが映らないことが多いので特定の処理を追加する
-            r_wrist_ys = [person.keypoints.r_wrist.y for person in people]
-            r_wrist_max_y = max(r_wrist_ys)
-            if r_wrist_max_y > 670:
-                predict_index = r_wrist_ys.index(r_wrist_max_y)
-                ts[predict_index] = 1
-        return ts, probs
+    def predict_from_persons(self, persons: Sequence[models.Person]) -> list[int]:
+        assert persons
+        img_tensor = torch.stack([val_transform(person) for person in persons]).to(self.device)
+        pred_y = self(img_tensor)
+        labels = torch.argmax(pred_y, dim=1).to("cpu").tolist()
+        return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
         return torch.load(SAVE_DIR / "epoch_250.pth", map_location=device)
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.parameters()).device
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -187,10 +173,10 @@ if __name__ == "__main__":
 
     inference_model = models.InferenceModel.objects.get(name="held_item")
 
-    teachers = utils.augument_teacher_nearby_time(inference_model)
+    teachers = utils.augument_teacher_nearby_time(inference_model, 2)
     train, test = train_test_split(teachers)
 
-    batch_size = 64
+    batch_size = 256
     max_epoch = 300
 
     train_set = ProgrammingClassifierDataset(train, train_transform)
@@ -201,7 +187,7 @@ if __name__ == "__main__":
     model = ProgrammingClassifier()
     optim_ = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
-    checkpoints = [50, 100, 150, 200, 230, 250, 300]
+    checkpoints = [1, 50, 100, 150, 200, 230, 250, 300]
 
     utils.model_compile(
         model,

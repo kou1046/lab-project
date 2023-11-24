@@ -63,9 +63,19 @@ class WatchingDisplayClassifier(nn.Module):
         y = self.block_3(y)
         return y
 
+    def predict_from_persons(self, persons: Sequence[models.Person]) -> list[int]:
+        assert persons
+        img_tensor = torch.stack([val_transform(person) for person in persons]).to(self.device)
+        pred_y = self(img_tensor)
+        labels = torch.argmax(pred_y, dim=1).to("cpu").tolist()
+        return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
         return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
 
 def train_transform(
@@ -153,7 +163,7 @@ if __name__ == "__main__":
     print(f"device: {device}")
 
     inference_model = models.InferenceModel.objects.get(name="gaze_location")
-    teachers = utils.augument_teacher_nearby_time(inference_model)
+    teachers = utils.augument_teacher_nearby_time(inference_model, 2)
     train, test = train_test_split(teachers)
     print(f"train: {len(train)}, test: {len(test)}")
 
@@ -164,7 +174,7 @@ if __name__ == "__main__":
     optim_ = optim.Adam(model.parameters())
     criterion = nn.CrossEntropyLoss()
 
-    batch_size = 128
+    batch_size = 256
     train_loader = data.DataLoader(train_dataset, batch_size)
     test_loader = data.DataLoader(test_dataset, batch_size)
     checkpoints = [50, 100, 150, 200, 230, 250, 300]

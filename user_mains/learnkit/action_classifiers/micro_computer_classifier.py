@@ -62,8 +62,19 @@ class MicroComputerClassifier(nn.Module):
         y = self.block_3(y)
         return y
 
+    def predict_from_persons(self, persons: Sequence[models.Person]) -> list[int]:
+        assert persons
+        tensor = torch.stack([val_transform(person) for person in persons]).to(self.device)
+        pred_y = self(tensor)
+        labels = torch.argmax(pred_y, dim=1).to("cpu").tolist()
+        return labels
+
     def load_pretrained_data(self, device: str = "cpu"):
         return torch.load(SAVE_DIR / "epoch_50.pth", map_location=device)
+
+    @property
+    def device(self):
+        return next(self.parameters()).device
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:

@@ -77,8 +77,22 @@ class ProgrammingClassifier2(nn.Module):
         y = self.dense(y)
         return y
 
+    def predict_from_persons(self, persons: Sequence[models.Person]) -> list[int]:
+        assert persons
+        img_tensor = torch.stack([val_transform(person) for person in persons]).to(self.device)
+        keypoint_tensor = torch.stack(
+            [utils.preprocess_keypoint(person.keypoint, "neck")[TRAIN_KEYPOINT_INDICES] for person in persons]
+        ).to(self.device)
+        pred_y = self(img_tensor, keypoint_tensor)
+        labels = torch.argmax(pred_y, dim=1).to("cpu").tolist()
+        return labels
+
     def load_pretrained_data(self, device: str = "cpu"):
         return torch.load(SAVE_DIR / "epoch_250.pth", map_location=device)
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.parameters()).device
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -178,10 +192,10 @@ if __name__ == "__main__":
 
     inference_model = models.InferenceModel.objects.get(name="held_item")
 
-    teachers = utils.augument_teacher_nearby_time(inference_model)
+    teachers = utils.augument_teacher_nearby_time(inference_model, 2)
     train, test = train_test_split(teachers)
 
-    batch_size = 128
+    batch_size = 256
     max_epoch = 300
 
     train_set = ProgrammingClassifier2Dataset(train, train_transform)
