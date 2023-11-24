@@ -93,6 +93,9 @@ def model_compile(
                 torch.save(
                     {
                         "epoch": epoch,
+                        "batch_size": train_loader.batch_size,
+                        "train_len": len(train_loader.dataset),
+                        "test_len": len(val_loader.dataset),
                         "state_dict": model.state_dict(),
                         "train_accs": train_accs,
                         "test_accs": test_accs,
