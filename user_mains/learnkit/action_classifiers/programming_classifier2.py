@@ -191,7 +191,7 @@ if __name__ == "__main__":
     teachers = utils.augument_teacher_nearby_time(inference_model, 3, enable_labels=[1])
     train, test = train_test_split(teachers)
 
-    batch_size = 200
+    batch_size = 256
     max_epoch = 300
 
     train_set = ProgrammingClassifier2Dataset(train, train_transform)

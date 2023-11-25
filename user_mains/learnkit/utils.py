@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 from submodules.deepsort_openpose.api.domain.points.point import Point
 from submodules.deepsort_openpose.api import domain
+from user_mains.learnkit.action_classifiers.action_classifier import ActionClassifier
 
 
 def torch_fix_seed(seed=42):
@@ -29,7 +30,7 @@ def torch_fix_seed(seed=42):
 
 
 def model_compile(
-    model: nn.Module,
+    model: ActionClassifier,
     train_loader: data.DataLoader,
     val_loader: data.DataLoader,
     max_epoch: int,
@@ -37,6 +38,7 @@ def model_compile(
     criterion: nn.Module,
     save_dir: Path,
     checkpoints: Sequence[int] | None = None,
+    fine_tuning: bool = False,
 ) -> None:
     """
     毎回学習する際ののひな型を書くのが面倒なので関数にしたもの．モデルの入力が画像のみの時なら使える.
@@ -47,10 +49,18 @@ def model_compile(
     os.makedirs(save_dir, exist_ok=True)
     checkpoints = [max_epoch] if checkpoints is None else checkpoints
 
-    train_accs = []
-    test_accs = []
+    if fine_tuning:
+        pretrained_data = model.load_pretrained_data()
+        model.load_state_dict(pretrained_data["state_dict"])
+        train_accs = pretrained_data["train_accs"]
+        test_accs = pretrained_data["test_accs"]
+        init_epoch = pretrained_data["epoch"] + 1
+    else:
+        train_accs = []
+        test_accs = []
+        init_epoch = 1
 
-    for epoch in range(1, max_epoch + 1):
+    for epoch in range(init_epoch, init_epoch + max_epoch):
         sum_acc = 0
         model.train()
         print(f"epoch: {epoch}/{max_epoch}")
