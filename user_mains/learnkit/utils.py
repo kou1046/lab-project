@@ -126,8 +126,13 @@ def extract_hand_area(
     return Point(int(xmin), int(ymin)), Point(int(xmax), int(ymax))
 
 
-def augument_teacher_nearby_time(inference_model: models.InferenceModel, interval_frame: int = 5):
-    teachers: list[models.Teacher] = list(inference_model.teachers.all())
+def augument_teacher_nearby_time(
+    inference_model: models.InferenceModel, interval_frame: int = 5, enable_labels: list[int] | None = None
+):
+    if enable_labels is None:
+        teachers: list[models.Teacher] = list(inference_model.teachers.all())
+    else:
+        teachers: list[models.Teacher] = list(inference_model.teachers.filter(label__in=enable_labels))
     augumented_teachers: list[models.Teacher] = []
 
     for teacher in teachers:
@@ -141,6 +146,9 @@ def augument_teacher_nearby_time(inference_model: models.InferenceModel, interva
 
         tmp_teachers = [models.Teacher(person=person, label=teacher.label, model=inference_model) for person in persons]
         augumented_teachers.extend(tmp_teachers)
+
+    if enable_labels is not None:
+        augumented_teachers.extend(list(inference_model.teachers.exclude(label__in=enable_labels)))
 
     return augumented_teachers
 

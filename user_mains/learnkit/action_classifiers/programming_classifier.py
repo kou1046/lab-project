@@ -70,7 +70,7 @@ class ProgrammingClassifier(nn.Module):  # ProgrammingClassifier
         return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
-        return torch.load(SAVE_DIR / "epoch_250.pth", map_location=device)
+        return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
 
     @property
     def device(self) -> torch.device:
