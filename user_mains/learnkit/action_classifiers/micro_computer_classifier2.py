@@ -73,11 +73,7 @@ class MicroComputerClassifier2(ActionClassifier):
         return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
-        return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
-
-    @property
-    def device(self):
-        return next(self.parameters()).device
+        return torch.load(SAVE_DIR / "epoch_100.pth", map_location=device)
 
 
 train_transformer = transforms.Compose(
@@ -168,7 +164,7 @@ if __name__ == "__main__":
     teachers = utils.augument_teacher_nearby_time(inference_model, 5, enable_labels=[2])
     train, test = train_test_split(teachers)
 
-    batch_size = 400
+    batch_size = 300
     max_epoch = 300
 
     train_set = MicroComputerClassifier2Dataset(train, train_transform)
