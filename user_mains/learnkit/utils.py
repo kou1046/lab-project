@@ -190,20 +190,20 @@ def extract_face_area(person: models.Person) -> tuple[Point, Point] | None:
 def preprocess_keypoint(keypoint: models.KeyPoint, base_point: domain.KeyPointAttr) -> torch.Tensor:
     base_point: models.ProbabilisticPoint = getattr(keypoint, base_point)
 
-    xs = [point.x for point in keypoint.get_all_points()]
-    ys = [point.y for point in keypoint.get_all_points()]
+    xs = np.array([point.x for point in keypoint.get_all_points()])
+    ys = np.array([point.y for point in keypoint.get_all_points()])
 
     # 基準点の相対座標に変換
-    relative_xs = [x - base_point.x for x in xs]
-    relative_ys = [y - base_point.y for y in ys]
+    relative_xs = xs - base_point.x
+    relative_ys = ys - base_point.y
 
-    max_x = max(relative_xs)
-    max_y = max(relative_ys)
+    max_x = relative_xs.max()
+    max_y = relative_ys.max()
 
     # 正規化
-    normalize_xs = [x / max_x if max_x else 0.0 for x in relative_xs]
-    normalize_ys = [y / max_y if max_y else 0.0 for y in relative_ys]
+    normalize_xs = np.divide(relative_xs, max_x, out=np.zeros_like(relative_xs), where=max_x != 0)
+    normalize_ys = np.divide(relative_ys, max_y, out=np.zeros_like(relative_ys), where=max_y != 0)
 
-    tensor = torch.Tensor([normalize_xs, normalize_ys]).T
+    tensor = torch.from_numpy(np.array([normalize_xs, normalize_ys])).float().T
 
     return tensor

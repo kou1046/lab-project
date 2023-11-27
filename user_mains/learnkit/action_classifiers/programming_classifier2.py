@@ -10,13 +10,14 @@ from torch.utils import data
 from torchvision import transforms
 
 from user_mains.learnkit import utils
+from user_mains.learnkit.action_classifiers.action_classifier import ActionClassifier
 from api import models
 
 SAVE_DIR = Path(__file__).parent / "models" / "programming_classifier2"
 TRAIN_KEYPOINT_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 15, 16, 17, 18]  # 　上半身のみ
 
 
-class ProgrammingClassifier2(nn.Module):
+class ProgrammingClassifier2(ActionClassifier):
     def __init__(self):
         super().__init__()
 
@@ -79,16 +80,16 @@ class ProgrammingClassifier2(nn.Module):
 
     def predict_from_persons(self, persons: Sequence[models.Person]) -> list[int]:
         assert persons
-        img_tensor = torch.stack([val_transform(person) for person in persons]).to(self.device)
+        img_tensor = torch.stack([val_transform(person) for person in persons]).to(self.device, non_blocking=True)
         keypoint_tensor = torch.stack(
             [utils.preprocess_keypoint(person.keypoint, "neck")[TRAIN_KEYPOINT_INDICES] for person in persons]
-        ).to(self.device)
+        ).to(self.device, non_blocking=True)
         pred_y = self(img_tensor, keypoint_tensor)
         labels = torch.argmax(pred_y, dim=1).to("cpu").tolist()
         return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
-        return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
+        return torch.load(SAVE_DIR / "epoch_100.pth", map_location=device)
 
 
 def train_transform(person: models.Person) -> tuple[torch.Tensor]:
@@ -204,13 +205,4 @@ if __name__ == "__main__":
     criterion = nn.CrossEntropyLoss()
     checkpoints = [50, 100, 150, 200, 230, 250, 300]
 
-    utils.model_compile(
-        model,
-        train_loader,
-        test_loader,
-        max_epoch,
-        optim_,
-        criterion,
-        SAVE_DIR,
-        checkpoints,
-    )
+    utils.model_compile(model, train_loader, test_loader, max_epoch, optim_, criterion, SAVE_DIR, checkpoints)

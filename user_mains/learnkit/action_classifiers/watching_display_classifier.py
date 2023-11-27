@@ -71,7 +71,7 @@ class WatchingDisplayClassifier(nn.Module):
         return labels
 
     def load_pretrained_data(self, device: str = "cpu"):
-        return torch.load(SAVE_DIR / "epoch_300.pth", map_location=device)
+        return torch.load(SAVE_DIR / "epoch_100.pth", map_location=device)
 
     @property
     def device(self):
@@ -87,6 +87,9 @@ def train_transform(
         return torch.zeros((1, 82, 148))
 
     min_, max_ = face_range
+
+    if min_.x == max_.x or min_.y == max_.y:
+        return torch.zeros((1, 82, 148))
 
     transformer = transforms.Compose(
         [
@@ -118,6 +121,9 @@ def val_transform(person: models.Person):
         return torch.zeros((1, 82, 148))
 
     min_, max_ = face_range
+
+    if min_.x == max_.x or min_.y == max_.y:
+        return torch.zeros((1, 82, 148))
 
     transformer = transforms.Compose(
         [
@@ -179,13 +185,4 @@ if __name__ == "__main__":
     test_loader = data.DataLoader(test_dataset, batch_size)
     checkpoints = [50, 100, 150, 200, 230, 250, 300]
 
-    utils.model_compile(
-        model,
-        train_loader,
-        test_loader,
-        300,
-        optim_,
-        criterion,
-        SAVE_DIR,
-        checkpoints,
-    )
+    utils.model_compile(model, train_loader, test_loader, 100, optim_, criterion, SAVE_DIR, checkpoints)
