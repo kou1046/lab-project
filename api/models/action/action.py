@@ -8,6 +8,6 @@ class Action(models.Model):
         db_table = "action"
 
     person = models.OneToOneField(Person, models.CASCADE, related_name="action")
-    is_programming = models.BooleanField()
-    is_having_pen = models.BooleanField()
-    is_watching_display = models.BooleanField()
+    programming = models.BooleanField()
+    using_computer = models.BooleanField()
+    watching_display = models.BooleanField()
