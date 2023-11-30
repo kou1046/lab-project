@@ -3,6 +3,7 @@ import base64
 import cv2
 import numpy as np
 from django.db import models
+from django.db.models.manager import Manager
 
 from ..base.uuid_model import UUIDModel
 from .group import Group
@@ -12,7 +13,6 @@ class Frame(UUIDModel):
     number = models.IntegerField()
     img_path = models.CharField(max_length=100)
     group = models.ForeignKey(Group, models.CASCADE, related_name="frames")
-    # people (逆参照)
 
     class Meta:
         db_table = "frame"
@@ -27,6 +27,9 @@ class Frame(UUIDModel):
     def img_base64(self) -> str:
         ret, dst_data = cv2.imencode(".jpg", self.img)
         return base64.b64encode(dst_data)
+
+    def has_person(self) -> bool:
+        return not not self.people.first()
 
     def visualize(
         self,
