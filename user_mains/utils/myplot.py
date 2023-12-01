@@ -73,23 +73,17 @@ def waterfall_plot(
     for ydir in range(y_len):
         zs = dim_2_array[ydir]
         if fill:
-            verts.append(
-                list(zip(np.hstack((xs[0], xs, xs[-1])), np.hstack((zmin, zs, zmin))))
-            )
+            verts.append(list(zip(np.hstack((xs[0], xs, xs[-1])), np.hstack((zmin, zs, zmin)))))
         else:
             im = ax_3d.plot(
                 xs,
                 np.full(xs.shape, ys[ydir]),
                 zs,
-                c=edgecolors
-                if type(edgecolors) is str or edgecolors is None
-                else edgecolors[ydir],
+                c=edgecolors if type(edgecolors) is str or edgecolors is None else edgecolors[ydir],
             )
             ims.append(*im)
     if fill:
-        polygon = PolyCollection(
-            verts, edgecolors=edgecolors, facecolors=facecolors, alpha=alpha
-        )
+        polygon = PolyCollection(verts, edgecolors=edgecolors, facecolors=facecolors, alpha=alpha)
         ims = ax_3d.add_collection3d(polygon, zs=ys, zdir="y")
         ax_3d.set(
             xlim=[x_min, x_max],
@@ -150,12 +144,7 @@ def error_plot(
         assert len(bar_xs) == row_num
 
     scatter_xs = tuple(
-        flat(
-            [
-                [x + shift_num] * x_len
-                for x, x_len, shift_num in zip(bar_xs, col_nums, scatter_shift_nums)
-            ]
-        )
+        flat([[x + shift_num] * x_len for x, x_len, shift_num in zip(bar_xs, col_nums, scatter_shift_nums)])
     )  # 散布図はscatter_shift_numだけずらすとエラーバーが見やすい
     scatter_colors = (
         tuple(flat([[color] * x_len for color, x_len in zip(colors, col_nums)]))
@@ -189,17 +178,9 @@ def error_plot(
 
     # custom_kwsが設定されたときはキーワードの追加または上書き
     if custom_kws is not None:
-        bar_kw = (
-            {**bar_kw, **custom_kws["bar_kw"]} if "bar_kw" in custom_kws else bar_kw
-        )
-        err_kw = (
-            {**err_kw, **custom_kws["err_kw"]} if "err_kw" in custom_kws else err_kw
-        )
-        scatter_kw = (
-            {**scatter_kw, **custom_kws["scatter_kw"]}
-            if "scatter_kw" in custom_kws
-            else scatter_kw
-        )
+        bar_kw = {**bar_kw, **custom_kws["bar_kw"]} if "bar_kw" in custom_kws else bar_kw
+        err_kw = {**err_kw, **custom_kws["err_kw"]} if "err_kw" in custom_kws else err_kw
+        scatter_kw = {**scatter_kw, **custom_kws["scatter_kw"]} if "scatter_kw" in custom_kws else scatter_kw
 
     ax.bar(bar_xs, aves, **bar_kw)
     plotline, caplines, barlinecols = ax.errorbar(bar_xs, aves, **err_kw)
@@ -209,9 +190,7 @@ def error_plot(
     caplines[0].set_markersize(25)
 
 
-def plot_3d_spectrogram(
-    ax_3d, array: np.ndarray, N: int, fs: float, window_size: int, step: int
-) -> None:
+def plot_3d_spectrogram(ax_3d, array: np.ndarray, N: int, fs: float, window_size: int, step: int) -> None:
     freq_mesh = [fs * k / window_size for k in range(window_size // 2 + 1)]
     time_mesh = np.linspace(0, N * (1 / fs), (N - window_size) // step)
     X, Y = np.meshgrid(time_mesh, freq_mesh)
@@ -311,12 +290,8 @@ def scatter_hist(
         y: np.ndarray = np.array(y)
         scatter.scatter(x, y, label=label, c=color, **scatter_kw)
         if kernel:
-            kde_x = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(
-                np.array(x)[:, None]
-            )
-            kde_y = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(
-                np.array(y)[:, None]
-            )
+            kde_x = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(np.array(x)[:, None])
+            kde_y = KernelDensity(kernel="gaussian", bandwidth=bandwidth).fit(np.array(y)[:, None])
             dens_x = np.linspace(xmin, xmax, 500)[:, None]
             dens_y = np.linspace(ymin, ymax, 500)[:, None]
             kde_x_ax.plot(
@@ -435,9 +410,7 @@ if __name__ == "__main__":
     xs = np.linspace(1, 1000, 1000)
     ys = np.linspace(1, 1000, 1000)
     plot_kw = {"lw": 3, "linestyle": "--"}
-    fig, axes = abbreviated_plot(
-        [xs], [ys], 305, 800, colors=["k"], labels=["test"], plot_kw=plot_kw
-    )
+    fig, axes = abbreviated_plot([xs], [ys], 305, 800, colors=["k"], labels=["test"], plot_kw=plot_kw)
     axes[1].set(xticks=[1000])
     plt.legend()
     plt.show()

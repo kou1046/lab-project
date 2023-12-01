@@ -3,6 +3,7 @@ outputs
 inputs
 migrations
 data
+caches
 *env
 user_mains/learnkit/action_classifiers/models
 __pycache__/

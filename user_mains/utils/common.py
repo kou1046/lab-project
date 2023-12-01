@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pickle
+from pathlib import Path
 from typing import Generator, Iterator, Literal, Sequence, TypeVar
 
 import cv2
@@ -16,9 +17,7 @@ from scipy import interpolate
 from .myplot import waterfall_plot
 
 
-def STFT(
-    array: np.ndarray, window_size: int, step: int, window_func=np.hamming
-) -> np.ndarray:
+def STFT(array: np.ndarray, window_size: int, step: int, window_func=np.hamming) -> np.ndarray:
     result = []
     step = step
     for i in range((len(array) - window_size) // step):
@@ -85,11 +84,7 @@ def cross_correlate(
         g_mean = np.mean(g[~np.isnan(g)])
     f_N = len(f)
     g_N = len(g)
-    lag_times = (
-        np.array(list(reversed(-1 * times[1:g_N])) + list(times))
-        if mode == "full"
-        else times
-    )
+    lag_times = np.array(list(reversed(-1 * times[1:g_N])) + list(times)) if mode == "full" else times
     range_ = (
         range(f_N + g_N - 2)
         if mode == "full"
@@ -121,16 +116,8 @@ def cross_correlate(
             result = (
                 np.sum(tmp_f[~np.isnan(tmp_f)] * tmp_g[~np.isnan(tmp_g)])
                 if not normalize
-                else (
-                    np.sum(
-                        (tmp_f[~np.isnan(tmp_f)] - f_mean)
-                        * (tmp_g[~np.isnan(tmp_g)] - g_mean)
-                    )
-                )
-                / (
-                    np.linalg.norm(tmp_f[~np.isnan(tmp_f)] - f_mean)
-                    * np.linalg.norm(tmp_g[~np.isnan(tmp_g)] - g_mean)
-                )
+                else (np.sum((tmp_f[~np.isnan(tmp_f)] - f_mean) * (tmp_g[~np.isnan(tmp_g)] - g_mean)))
+                / (np.linalg.norm(tmp_f[~np.isnan(tmp_f)] - f_mean) * np.linalg.norm(tmp_g[~np.isnan(tmp_g)] - g_mean))
             )
         else:
             result = (
@@ -172,9 +159,7 @@ def save_STAC_animation(
 ) -> None:
     os.makedirs(output_dir, exist_ok=True)
     window_len = len(array) // window
-    split_array = np.array(
-        [array[i * step : i * step + window] for i in range(window_len)]
-    )
+    split_array = np.array([array[i * step : i * step + window] for i in range(window_len)])
     for i, arr in enumerate(split_array):
         fig, axes = plt.subplots(3, 1, sharex=Tr)
         axes[0].set_title(f"Data window{i+1}")
@@ -260,19 +245,11 @@ def moving_correlate(
                 else np.nan
             )
         else:
-            result = (
-                np.corrcoef(tmp_f, tmp_g)[0][1]
-                if len(times) - 1 >= tau + window
-                else np.nan
-            )
+            result = np.corrcoef(tmp_f, tmp_g)[0][1] if len(times) - 1 >= tau + window else np.nan
         MC.append(result)
         if animation_axes is not None:
-            im = animation_axes[0].plot(
-                times[: tau + window], [*[np.nan] * tau] + list(tmp_f), "red"
-            )
-            im_2 = animation_axes[0].plot(
-                times[: tau + window], [*[np.nan] * tau] + list(tmp_g), "blue"
-            )
+            im = animation_axes[0].plot(times[: tau + window], [*[np.nan] * tau] + list(tmp_f), "red")
+            im_2 = animation_axes[0].plot(times[: tau + window], [*[np.nan] * tau] + list(tmp_g), "blue")
             im_3 = animation_axes[1].plot(times[: tau + 1], MC, "k")
             im_4 = animation_axes[0].axvspan(
                 times[tau],
@@ -283,22 +260,27 @@ def moving_correlate(
     return (MC, ims) if animation_axes is not None else MC
 
 
-def checkpoint(path: str = "checkpoint.pickle"):
+def checkpoint(filename: str = "cache"):
     """_summary_
     関数の返り値をバイナリデータ形式でキャッシュする．キャッシュ保存(読み込み)先を引数に渡す．デコレータとして使える．
     Args:
         path (str, optional): Cache storage path. Defaults to "checkpoint.pickle".
-
     """
+
+    cache_dir = Path(__file__).parent / "caches"
+    if not cache_dir.exists():
+        os.makedirs(cache_dir)
 
     def _checkpoint(func):
         def __checkpoint(*args, **kwargs):
-            if os.path.exists(path):
+            nonlocal cache_dir
+            path = cache_dir / (filename + ".pickle")
+            if path.exists():
                 with open(path, "rb") as f:
                     ret = pickle.load(f)
             else:
                 ret = func(*args, **kwargs)
-                with open(path, "wb") as f:
+                with open(cache_dir / (filename + ".pickle"), "wb") as f:
                     pickle.dump(ret, f)
             return ret
 
@@ -307,9 +289,7 @@ def checkpoint(path: str = "checkpoint.pickle"):
     return _checkpoint
 
 
-def moving_correlate_3d(
-    array_1, array_2, times, window, axes=None, axes_3d=None, colors=None
-):
+def moving_correlate_3d(array_1, array_2, times, window, axes=None, axes_3d=None, colors=None):
     if not isinstance(array_1, np.ndarray):
         array_1 = np.array(array_1)
     if not isinstance(array_2, np.ndarray):
@@ -333,17 +313,13 @@ def moving_correlate_3d(
     for tau in range(N - 1):
         tmp_F = F[:, tau : tau + window]
         tmp_G = G[:, tau : tau + window]
-        result = np.sum((tmp_F - F_mean) * (tmp_G - G_mean), axis=1).reshape(
-            -1, 1
-        ) / np.sum(
+        result = np.sum((tmp_F - F_mean) * (tmp_G - G_mean), axis=1).reshape(-1, 1) / np.sum(
             (
                 np.linalg.norm(tmp_F - F_mean, axis=1).reshape(-1, 1)
                 * np.linalg.norm(tmp_G - G_mean, axis=1).reshape(-1, 1)
             ),
             axis=1,
-        ).reshape(
-            -1, 1
-        )
+        ).reshape(-1, 1)
         if tau == 0:
             MC_array = result.copy()
         else:
@@ -356,9 +332,7 @@ def moving_correlate_3d(
                 (dt * tau, ymax, zmin),
             ]
             cor_2 = [(cor[0], cor[1], zmax) for cor in cor_1]
-            window_box = Poly3DCollection(
-                get_Rectangular_face(cor_1 + cor_2), color="gray", alpha=0.4
-            )
+            window_box = Poly3DCollection(get_Rectangular_face(cor_1 + cor_2), color="gray", alpha=0.4)
             im = axes_3d[0].add_collection3d(window_box)
             im_2 = waterfall_plot(
                 axes_3d[0],
@@ -397,10 +371,7 @@ def moving_correlate_3d(
                 color="lightgray",
                 alpha=0.7,
             )
-            ax_3_im_list = [
-                axes[2].plot(times[: tau + 1], MC, color)[0]
-                for MC, color in zip(MC_array, colors)
-            ]
+            ax_3_im_list = [axes[2].plot(times[: tau + 1], MC, color)[0] for MC, color in zip(MC_array, colors)]
             ims.append([im] + [im_2] + ax_3_im_list)
     return (MC_array, ims) if axes_3d is not None or axes is not None else MC_array
 
@@ -439,9 +410,7 @@ def animateMatchTemplate(
                     col_progress : col_progress + fg_height,
                     row_progress : row_progress + fg_width,
                 ] = extracted_img
-                result_anim[: col_progress + 1, : row_progress + 1] = result[
-                    : col_progress + 1, : row_progress + 1
-                ]
+                result_anim[: col_progress + 1, : row_progress + 1] = result[: col_progress + 1, : row_progress + 1]
                 yield col_progress, row_progress, result_anim, bg_img
 
     fig, axes = plt.subplots(3, 1)
@@ -481,10 +450,7 @@ def scale(
     ymin: U,
     ymax: U,
     rate: float,
-    basepoint: Literal[
-        "center", "upper left", "upper right", "downer left", "downer right"
-    ]
-    | tuple[U, U] = "center",
+    basepoint: Literal["center", "upper left", "upper right", "downer left", "downer right"] | tuple[U, U] = "center",
 ):
     if isinstance(basepoint, str):
         if basepoint == "center":
@@ -527,9 +493,7 @@ def scale(
     return scaled_xmin, scaled_xmax, scaled_ymin, scaled_ymax
 
 
-def central_idxes_gen(
-    container_size: int, win_num: int
-) -> Generator[Iterator[int], None, None]:
+def central_idxes_gen(container_size: int, win_num: int) -> Generator[Iterator[int], None, None]:
     """
     中央を基準とした窓の計算に用いる．イテレート毎に移動するインデックス群のイテレータを返すジェネレータ．
     最初は前方のインデックス群，　最後は後方のインデックス群を返す．
@@ -555,9 +519,7 @@ def central_idxes_gen(
         elif index + win_num >= container_size:
             sample_nums = range(index - win_num * 2, index + 1)
         else:
-            sample_nums = list(range(index - win_num, index)) + list(
-                range(index, index + (win_num + 1))
-            )
+            sample_nums = list(range(index - win_num, index)) + list(range(index, index + (win_num + 1)))
         yield iter(sample_nums)
         index += 1
         if index == container_size:
