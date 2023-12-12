@@ -48,6 +48,17 @@ def get_my_rcparams(linewidth: int = 5, major_size=20) -> dict[str, dict[str, An
     return rc_params
 
 
+def get_simple_style_param():
+    rc_params = {
+        "xtick": {"direction": "in", "major.size": 6, "major.width": 2, "top": True},
+        "ytick": {"direction": "in", "major.size": 6, "major.width": 2, "right": True},
+        "axes": {"linewidth": 2},
+        "figure": {"figsize": (6, 6)},
+        "font": {"family": "Arial", "size": 20, "weight": "bold"},
+    }
+    return rc_params
+
+
 T = TypeVar("T", int, float)
 
 

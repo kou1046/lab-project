@@ -35,6 +35,25 @@ def DFT(array):
     return np.sum(array * M, axis=1)
 
 
+def softmax(x):
+    """
+    numpy版softmax. 2次元配列のみに対応.
+    """
+
+    row_max = np.max(x, axis=1, keepdims=True)
+    e_x = np.exp(x - row_max)  # 最大値で引くと計算が安定する
+    every_row_sums = np.sum(e_x, axis=1, keepdims=True)
+    return e_x / every_row_sums
+
+
+def divide_nan_to_zero(a: np.ndarray, b: np.ndarray):
+    """
+    0除算の警告を回避するnumpy配列の除算. a / bを行うが, bが0の要素の結果は0となる.
+    """
+
+    return np.divide(a, b, out=np.zeros_like(a), where=b != 0)
+
+
 def IDFT(array):
     N = len(array)
     A = np.arange(N)
@@ -278,6 +297,7 @@ def checkpoint(filename: str = "cache"):
             if path.exists():
                 with open(path, "rb") as f:
                     ret = pickle.load(f)
+                print(f"{func.__name__} load cached file: {str(path)}")
             else:
                 ret = func(*args, **kwargs)
                 with open(cache_dir / (filename + ".pickle"), "wb") as f:
