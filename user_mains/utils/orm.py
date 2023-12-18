@@ -12,6 +12,7 @@ class QuerysetIterator:
         self.queryset = queryset
         self.chunk_size = chunk_size
         self.return_chunk = return_chunk
+        self.start = 0
 
     def __len__(self):
         if self.return_chunk:
@@ -22,17 +23,12 @@ class QuerysetIterator:
         return self
 
     def __next__(self):
-        start = 0
-        while True:
-            chunk = self.queryset[start : start + self.chunk_size]
-
-            if self.return_chunk:
-                return chunk
-            else:
-                for obj in chunk:
-                    return obj
-
-            if len(chunk) < self.chunk_size:
-                raise StopIteration()
-
-            start += self.chunk_size
+        chunk = self.queryset[self.start : self.start + self.chunk_size]
+        self.start += self.chunk_size
+        if self.return_chunk:
+            return chunk
+        else:
+            for obj in chunk:
+                return obj
+        if len(chunk) < self.chunk_size:
+            raise StopIteration()
