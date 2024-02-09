@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import itertools
-from msilib import sequence
-from typing import Any, Literal, Optional, Sequence, Type, TypeVar, Union
+import random
+from typing import Any, Literal, Optional, Sequence, TypeVar, Union
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.collections import PathCollection
 from matplotlib.path import Path
 from mpl_toolkits.mplot3d.art3d import PolyCollection
 from sklearn.neighbors import KernelDensity
@@ -52,9 +51,9 @@ def get_simple_style_param():
     rc_params = {
         "xtick": {"direction": "in", "major.size": 6, "major.width": 2, "top": True},
         "ytick": {"direction": "in", "major.size": 6, "major.width": 2, "right": True},
-        "axes": {"linewidth": 2},
+        "axes": {"linewidth": 2, "labelweight": "bold"},
         "figure": {"figsize": (6, 6)},
-        "font": {"family": "Arial", "size": 20, "weight": "bold"},
+        "font": {"family": "Arial", "size": 25, "weight": "bold"},
     }
     return rc_params
 
@@ -90,7 +89,7 @@ def waterfall_plot(
                 xs,
                 np.full(xs.shape, ys[ydir]),
                 zs,
-                c=edgecolors if type(edgecolors) is str or edgecolors is None else edgecolors[ydir],
+                c=(edgecolors if type(edgecolors) is str or edgecolors is None else edgecolors[ydir]),
             )
             ims.append(*im)
     if fill:
@@ -112,7 +111,8 @@ def error_plot(
     ax,
     bar_xs: Sequence[int] | None = None,
     colors: str | Sequence[str] = "k",
-    scatter_shift_nums: float | Sequence[float] = 0.1,
+    scatter_shift_nums: float | Sequence[float] = 0.2,
+    scatter_random_shift_range: tuple[int, int] | None = (-0.1, 0.1),
     error_type: Literal["SD", "SE"] = "SD",
     custom_kws: Optional[KwsType] = None,
 ) -> None:  # datasetの次元に注意．
@@ -154,9 +154,15 @@ def error_plot(
     else:
         assert len(bar_xs) == row_num
 
-    scatter_xs = tuple(
+    # 散布図はscatter_shift_numだけずらすとエラーバーが見やすい
+    scatter_xs = list(
         flat([[x + shift_num] * x_len for x, x_len, shift_num in zip(bar_xs, col_nums, scatter_shift_nums)])
-    )  # 散布図はscatter_shift_numだけずらすとエラーバーが見やすい
+    )
+
+    # 散布図で被った点があった時, 横にランダムでずらすと全ての点を確認しやすい
+    if scatter_random_shift_range:
+        scatter_xs = [scatter_x + random.uniform(*scatter_random_shift_range) for scatter_x in scatter_xs]
+
     scatter_colors = (
         tuple(flat([[color] * x_len for color, x_len in zip(colors, col_nums)]))
         if not isinstance(colors, str)
@@ -174,18 +180,18 @@ def error_plot(
         "edgecolor": colors,
         "fill": False,
         "color": colors,
-        "linewidth": 5,
     }
     err_kw = {
         "yerr": errors,
         "capsize": 0,
-        "capthick": 8,
-        "elinewidth": 8,
+        "capthick": 3,
         "fmt": "none",
+        "elinewidth": 3,
         "ecolor": "k",
-        "lolims": True,
+        "uplims": [False if ave > 0 else True for ave in aves],
+        "lolims": [True if ave > 0 else False for ave in aves],
     }
-    scatter_kw = {"color": scatter_colors, "s": 150}
+    scatter_kw = {"color": scatter_colors}
 
     # custom_kwsが設定されたときはキーワードの追加または上書き
     if custom_kws is not None:
@@ -197,8 +203,14 @@ def error_plot(
     plotline, caplines, barlinecols = ax.errorbar(bar_xs, aves, **err_kw)
     ax.scatter(scatter_xs, tuple(flat(dataset)), **scatter_kw)
     ax.set(xticks=bar_xs)
-    caplines[0].set_marker("_")
-    caplines[0].set_markersize(25)
+
+    for capline in caplines:
+        capline.set_marker("_")
+        capline.set_markersize(25)
+        capline.set_marker("_")
+        capline.set_markersize(25)
+
+    return aves, errors
 
 
 def plot_3d_spectrogram(ax_3d, array: np.ndarray, N: int, fs: float, window_size: int, step: int) -> None:
@@ -253,6 +265,8 @@ def scatter_hist(
     ax.set(xlabel='x', ylabel='y', )
     plt.legend(bbox_to_anchor=(1., 1.05), fontsize=24, loc='lower left')
     plt.show()
+
+
     """
     hist_default_kw = {
         "bins": 100,
